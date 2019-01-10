@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from urllib.parse import urlparse
+import hashlib
 
 
 class Url:
@@ -29,6 +30,7 @@ class Url:
         self.path = path
         self.query = query
         self.fragment = fragment
+        self.sha256 = ''
 
     def from_string(url: str) -> 'Url':
         """Create url from string.
@@ -69,6 +71,18 @@ class Url:
         if self.fragment:
             url = f'{url}#{self.fragment}'
         return url
+
+    def hash(self):
+        """Get sha256 hash of url.
+
+        Returns:
+            A sha256 hash of the url
+            str
+        """
+        if self.sha256 != '':
+            return self.sha256
+        self.sha256 = hashlib.sha256(self.to_string().encode()).hexdigest()
+        return self.sha256
 
     def create_child_url(self, uri: str) -> 'Url':
         """Create child url from string.

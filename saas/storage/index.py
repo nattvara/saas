@@ -5,7 +5,6 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import saas.utils.console as console
 from saas.web.url import Url
-import hashlib
 import time
 
 
@@ -75,7 +74,7 @@ class Index:
         """
         hashes = []
         for url in urls:
-            hashes.append(hashlib.sha256(url.to_string().encode()).hexdigest())
+            hashes.append(url.hash())
         res = self.es.search(index='crawled', body={
             'query': {
                 'bool': {
@@ -93,7 +92,7 @@ class Index:
                 hashes.remove(doc['_id'])
         out = []
         for url in urls:
-            if hashlib.sha256(url.to_string().encode()).hexdigest() in hashes:
+            if url.hash() in hashes:
                 out.append(url)
         return out
 
@@ -113,7 +112,7 @@ class Index:
             prepared.append({
                 '_type': 'url',
                 '_index': index,
-                '_id': hashlib.sha256(url.to_string().encode()).hexdigest(),
+                '_id': url.hash(),
                 '_source': {
                     'url': url.to_string(),
                     'timestamp': time.time(),
