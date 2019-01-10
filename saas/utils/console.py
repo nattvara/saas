@@ -18,6 +18,16 @@ def pp(var):
     beeprint.pp(var)
 
 
+def dd(var):
+    """Pretty print and die.
+
+    Args:
+        var: some variable
+    """
+    pp(var)
+    exit()
+
+
 def p(var, end=None):
     """Print.
 
