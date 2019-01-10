@@ -18,4 +18,11 @@ def get_argument_parser():
         help='''Path to input url file''',
     )
 
+    parser.add_argument(
+        '--clear-elasticsearch',
+        action='store_true',
+        default=False,
+        help='Use flag to clear elasticsearch on start',
+    )
+
     return parser

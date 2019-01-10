@@ -5,6 +5,7 @@ import saas.utils.console as console
 from _io import TextIOWrapper
 from saas.web.url import Url
 from saas.web.browser import Browser
+from saas.storage.index import Index
 import time
 import os
 
@@ -16,13 +17,16 @@ class Crawler:
     for websites.
     """
 
-    def __init__(self, url_file: str):
+    def __init__(self, url_file: str, clear_elasticsearch: bool):
         """Create crawler.
 
         Args:
             url_file: path to url file
+            clear_elasticsearch: elasticsearch cluster should cleared on start
         """
         self.source, self.source_path = self.open_source(url_file)
+        self.clear_elasticsearch = clear_elasticsearch
+        self.index = Index()
 
     def open_source(self, url_file: str) -> TextIOWrapper:
         """Open source file.
@@ -62,11 +66,13 @@ class Crawler:
 
     def start(self):
         """Start crawler."""
+        if self.clear_elasticsearch:
+            self.index.clear()
         while True:
             console.p('.', end='')
             url = self.next_url()
-            doc = Browser.get_page(url)
-            console.pp(doc)
+            page = Browser.get_page(url)
+            self.index.store_urls(page)
             time.sleep(1)
 
     def next_url(self):

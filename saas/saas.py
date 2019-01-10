@@ -13,7 +13,7 @@ def main():
         parser = arguments.get_argument_parser()
         args = parser.parse_args(sys.argv[1:])
 
-        crawler = Crawler(args.url_file)
+        crawler = Crawler(args.url_file, args.clear_elasticsearch)
         crawler.start()
 
     except KeyboardInterrupt:
