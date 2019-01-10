@@ -1,9 +1,10 @@
 """saas entry point."""
 
-import sys
-import saas.utils.args as arguments
-import saas.utils.console as console
 from saas.crawler.crawler import Crawler
+import saas.utils.console as console
+from saas.storage.index import Index
+import saas.utils.args as arguments
+import sys
 
 
 def main():
@@ -13,7 +14,11 @@ def main():
         parser = arguments.get_argument_parser()
         args = parser.parse_args(sys.argv[1:])
 
-        crawler = Crawler(args.url_file, args.clear_elasticsearch)
+        crawler = Crawler(
+            url_file=args.url_file,
+            index=Index(),
+            clear_elasticsearch=args.clear_elasticsearch
+        )
         crawler.start()
 
     except KeyboardInterrupt:
