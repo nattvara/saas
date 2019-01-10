@@ -1,0 +1,75 @@
+"""Url module."""
+
+from __future__ import annotations
+import saas.utils.console as console
+from urllib.parse import urlparse
+
+
+class Url:
+    """Url class."""
+
+    def __init__(
+            self,
+            scheme: str,
+            domain: str,
+            path: str,
+            query: str,
+            fragment: str
+    ):
+        """Create new url.
+
+        Args:
+            scheme: eg. https
+            domain: example.com
+            path: /path/to/page.html
+            query: ?some_param=value
+            fragment: #some_string
+        """
+        self.scheme = scheme
+        self.domain = domain
+        self.path = path
+        self.query = query
+        self.fragment = fragment
+
+    def from_string(url: str) -> 'Url':
+        """Create url from string.
+
+        Args:
+            url: string
+
+        Returns:
+            A url
+            Url
+        """
+        parse = urlparse(url)
+        if parse.scheme != 'http' and parse.scheme != 'https':
+            raise InvalidUrlException('invalid url scheme')
+        if '.' not in parse.netloc:
+            raise InvalidUrlException('invalid domain scheme')
+        return Url(
+            scheme=parse.scheme,
+            domain=parse.netloc,
+            path=parse.path,
+            query=parse.query,
+            fragment=parse.fragment,
+        )
+
+    def to_string(self) -> str:
+        """Convert url to string.
+
+        Returns:
+            The url as a string
+            str
+        """
+        url = f'{self.scheme}://{self.domain}{self.path}'
+        if self.query:
+            url = f'{url}?{self.query}'
+        if self.fragment:
+            url = f'{url}#{self.fragment}'
+        return url
+
+
+class InvalidUrlException(ValueError):
+    """Invalid url exception."""
+
+    pass
