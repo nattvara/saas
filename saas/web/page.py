@@ -10,6 +10,7 @@ class Page:
     def __init__(self):
         """Create new page."""
         self.urls = []
+        self.status_code = None
 
     def add_url(self, url: Url):
         """Add url.

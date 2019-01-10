@@ -98,7 +98,11 @@ class Crawler:
                 self.index.add_crawled_url(url)
 
                 page = Browser.get_page(url)
-                if page:
+                self.index.set_status_code_for_crawled_url(
+                    url,
+                    page.status_code
+                )
+                if page.status_code == 200:
                     page.add_url(url)
                     self.index.add_uncrawled_urls(page.urls)
             console.p('.')

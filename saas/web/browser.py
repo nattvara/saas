@@ -15,7 +15,7 @@ class Browser:
     from urls.
     """
 
-    def get_page(url: Url):
+    def get_page(url: Url) -> Page:
         """Get page.
 
         Fetch page at url
@@ -25,17 +25,19 @@ class Browser:
 
         Returns:
             The requested page if response is 200 otherwise None
-            Page or None
+            Page
         """
         parser = LinkParser()
+        page = Page()
         try:
             with urllib.request.urlopen(url.to_string()) as response:
                 html = response.read()
         except HTTPError as error:
-            return None
+            page.status_code = error.getcode()
+            return page
 
+        page.status_code = response.getcode()
         links = parser.parse(str(html))
-        page = Page()
 
         for link in links:
             try:

@@ -168,6 +168,19 @@ class Index:
         """
         self.es.delete(index='uncrawled', doc_type='url', id=id, ignore=404)
 
+    def set_status_code_for_crawled_url(self, url: Url, status_code: int):
+        """Set status code for a crawled url.
+
+        Args:
+            url: Url to set status code of
+            status_code: the status code of the http request to the url
+        """
+        self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
+            'doc': {
+                'status_code': status_code
+            }
+        })
+
 
 class Mappings():
     """Mappings for elasticsearch indices."""
@@ -187,6 +200,9 @@ class Mappings():
                 'timestamp': {
                     'type': 'date',
                     'format': 'epoch_second',
+                },
+                'status_code': {
+                    'type': 'short'
                 }
             }
         }
