@@ -13,6 +13,7 @@ setup(
     install_requires=[
         'wheel',
         'beeprint',
+        'elasticsearch'
     ],
     entry_points={
         'console_scripts': [
