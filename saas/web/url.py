@@ -1,7 +1,6 @@
 """Url module."""
 
 from __future__ import annotations
-import saas.utils.console as console
 from urllib.parse import urlparse
 
 
@@ -46,10 +45,13 @@ class Url:
             raise InvalidUrlException('invalid url scheme')
         if '.' not in parse.netloc:
             raise InvalidUrlException('invalid domain scheme')
+        path = parse.path
+        while '//' in path:
+            path = path.replace('//', '/')
         return Url(
             scheme=parse.scheme,
             domain=parse.netloc,
-            path=parse.path,
+            path=path,
             query=parse.query,
             fragment=parse.fragment,
         )
@@ -81,7 +83,11 @@ class Url:
             A fully qualified url
             Url
         """
+        if len(uri) == 0:
+            raise InvalidUrlException('uri was empty')
         if uri[0] == '/':
+            return Url.from_string(f'{self.scheme}://{self.domain}{uri}')
+        if uri[0] == '#':
             return Url.from_string(f'{self.scheme}://{self.domain}{uri}')
         return Url.from_string(
             f'{self.scheme}://{self.domain}{self.path}/{uri}'

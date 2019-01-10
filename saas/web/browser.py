@@ -41,8 +41,11 @@ class Browser:
             try:
                 page.add_url(Url.from_string(link))
             except InvalidUrlException as e:
-                url = url.create_child_url(link)
-                page.add_url(url)
+                try:
+                    url = url.create_child_url(link)
+                    page.add_url(url)
+                except InvalidUrlException as e:
+                    pass
         return page
 
 
