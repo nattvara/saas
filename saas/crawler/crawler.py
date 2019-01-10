@@ -4,9 +4,7 @@ from __future__ import annotations
 import saas.utils.console as console
 from saas.web.browser import Browser
 from saas.storage.index import Index
-from saas.web.page import Page
 from saas.web.url import Url
-import time
 import os
 
 
