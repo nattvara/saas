@@ -68,6 +68,25 @@ class Url:
             url = f'{url}#{self.fragment}'
         return url
 
+    def create_child_url(self, uri: str) -> 'Url':
+        """Create child url from string.
+
+        eg the child login of https://example.com with the uri
+        /login would be https://example.com/login
+
+        Args:
+            uri: a path to a resource
+
+        Returns:
+            A fully qualified url
+            Url
+        """
+        if uri[0] == '/':
+            return Url.from_string(f'{self.scheme}://{self.domain}{uri}')
+        return Url.from_string(
+            f'{self.scheme}://{self.domain}{self.path}/{uri}'
+        )
+
 
 class InvalidUrlException(ValueError):
     """Invalid url exception."""
