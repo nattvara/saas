@@ -47,6 +47,11 @@ class TestCrawler(unittest.TestCase):
             root.create_child_url('/bar').to_string()
         )
 
+        self.assertEqual(
+            'https://foo.com',
+            root.create_child_url('//foo.com').to_string()
+        )
+
         root = 'https://example.com?foo=bar'
         root = Url.from_string(root)
 

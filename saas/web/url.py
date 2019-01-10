@@ -99,6 +99,9 @@ class Url:
         """
         if len(uri) == 0:
             raise InvalidUrlException('uri was empty')
+        if len(uri) > 1:
+            if f'{uri[0]}{uri[1]}' == '//':
+                return Url.from_string(f'{self.scheme}:{uri}')
         if uri[0] == '/':
             return Url.from_string(f'{self.scheme}://{self.domain}{uri}')
         if uri[0] == '#':
