@@ -3,6 +3,7 @@
 from __future__ import annotations
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+from saas.storage.refresh import RefreshRate
 import saas.utils.console as console
 from saas.web.url import Url
 import time
@@ -115,7 +116,7 @@ class Index:
                 '_id': url.hash(),
                 '_source': {
                     'url': url.to_string(),
-                    'timestamp': time.time(),
+                    'timestamp': int(time.time()),
                 }
             })
         return prepared
@@ -134,10 +135,10 @@ class Index:
                   "_score": null,
                   "_source": {
                     "url": "http://example.com",
-                    "timestamp": 1547145709.426097
+                    "timestamp": 1547145709
                   },
                   "sort": [
-                    1547145709000
+                    1547145709
                   ]
                 }
             dict or None
@@ -160,6 +161,56 @@ class Index:
 
         return res['hits']['hits'][0]
 
+    def most_recent_crawled_url(self, refresh_rate=RefreshRate):
+        """Get most the url that was most recently crawled.
+
+        Args:
+            refresh_rate: the refresh reate to search for and
+                use to avoid locked urls
+
+        Returns:
+            A url that has been crawled with status code 200
+            Url
+
+        Raises:
+            EmptySearchResultException: if no url was found
+        """
+        res = self.es.search(index='crawled', size=1, body={
+            'query': {
+                'bool': {
+                    'must': {
+                        'term': {
+                            'status_code': 200,
+                        }
+                    },
+                    'must_not': [
+                        {
+                            'term': {
+                                'lock_value': refresh_rate().lock(),
+                            }
+                        },
+                        {
+                            'term': {
+                                'lock_format': refresh_rate.lock_format(),
+                            }
+                        }
+                    ]
+                }
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ]
+        })
+
+        if res['hits']['total'] == 0:
+            raise EmptySearchResultException('no crawled url was found')
+
+        return Url.from_string(res['hits']['hits'][0]['_source']['url'])
+
     def remove_uncrawled_url(self, id: str):
         """Remove url from uncrawled index.
 
@@ -178,6 +229,22 @@ class Index:
         self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
             'doc': {
                 'status_code': status_code
+            }
+        })
+
+    def lock_crawled_url(self, url: Url, refresh_rate: RefreshRate):
+        """Lock a crawld url.
+
+        Place a lock on a crawled url for a given refresh rate.
+
+        Args:
+            url: Url to lock
+            refresh_rate: Refresh rate to use (Hourly, Daily, etc.)
+        """
+        self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
+            'doc': {
+                'lock_format': refresh_rate.lock_format(),
+                'lock_value': refresh_rate().lock(),
             }
         })
 
@@ -223,7 +290,19 @@ class Mappings():
                 'timestamp': {
                     'type': 'date',
                     'format': 'epoch_second',
+                },
+                'lock_format': {
+                    'type': 'text'
+                },
+                'lock_value': {
+                    'type': 'text'
                 }
             }
         }
     }
+
+
+class EmptySearchResultException(Exception):
+    """Empty search result."""
+
+    pass
