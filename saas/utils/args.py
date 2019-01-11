@@ -25,4 +25,12 @@ def get_argument_parser():
         help='Use flag to clear elasticsearch on start',
     )
 
+    parser.add_argument(
+        '--component',
+        type=str,
+        nargs='?',
+        default=None,
+        help='''Used during development to run a specific component''',
+    )
+
     return parser
