@@ -1,6 +1,8 @@
 """saas entry point."""
 
+from saas.photographer.photographer import Photographer
 from saas.crawler.crawler import Crawler
+import saas.storage.refresh as refresh
 import saas.utils.console as console
 from saas.storage.index import Index
 import saas.utils.args as arguments
@@ -19,7 +21,17 @@ def main():
             index=Index(),
             clear_elasticsearch=args.clear_elasticsearch
         )
-        crawler.start()
+
+        photographer = Photographer(
+            index=Index(),
+            refresh_rate=refresh.Hourly
+        )
+
+        if args.component == 'crawler':
+            crawler.start()
+
+        if args.component == 'photographer':
+            photographer.start()
 
     except KeyboardInterrupt:
         console.p('')
