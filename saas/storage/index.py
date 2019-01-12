@@ -35,6 +35,9 @@ class Index:
         self.es.indices.create('crawled', body={
             'mappings': Mappings.crawled
         })
+        self.es.indices.create('photos', body={
+            'mappings': Mappings.photos
+        })
         console.p('done.')
 
     def add_crawled_url(self, url: Url):
@@ -329,6 +332,28 @@ class Mappings():
                     'type': 'text'
                 },
                 'lock_value': {
+                    'type': 'text'
+                }
+            }
+        }
+    }
+
+    photos = {
+        'photo': {
+            'properties': {
+                'url_id': {
+                    'type': 'text',
+                },
+                'refresh_rate': {
+                    'type': 'text'
+                },
+                'captured_at': {
+                    'type': 'text'
+                },
+                'filename': {
+                    'type': 'text'
+                },
+                'directory': {
                     'type': 'text'
                 }
             }
