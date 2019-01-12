@@ -76,6 +76,7 @@ class Crawler:
         """
         if url_file[0] == '~':
             root = os.path.expanduser('~')
+            url_file = url_file[1:]
         elif url_file[0] == '/':
             root = '/'
         else:
