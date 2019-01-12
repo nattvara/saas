@@ -1,6 +1,7 @@
 """saas entry point."""
 
 from saas.photographer.photographer import Photographer
+from saas.storage.datadir import DataDirectory
 from saas.crawler.crawler import Crawler
 import saas.storage.refresh as refresh
 import saas.utils.console as console
@@ -24,7 +25,8 @@ def main():
 
         photographer = Photographer(
             index=Index(),
-            refresh_rate=refresh.Hourly
+            refresh_rate=refresh.Hourly,
+            datadir=DataDirectory(args.data_dir)
         )
 
         if args.component == 'crawler':

@@ -19,6 +19,13 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--data-dir',
+        type=str,
+        default='~/.saas-data-dir',
+        help='''Path data directory''',
+    )
+
+    parser.add_argument(
         '--clear-elasticsearch',
         action='store_true',
         default=False,
