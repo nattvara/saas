@@ -1,9 +1,12 @@
 """Index test."""
 
+from saas.photographer.photo import PhotoPath, LoadingPhoto
+from saas.storage.datadir import DataDirectory
 import saas.storage.refresh as refresh
 from saas.storage.index import Index
 from unittest.mock import MagicMock
 from saas.web.url import Url
+from os.path import dirname
 import unittest
 
 
@@ -13,6 +16,11 @@ class TestIndex(unittest.TestCase):
     def setUp(self):
         """Set up test."""
         self.index = Index()
+        self.datadir = DataDirectory(dirname(__file__) + '/datadir')
+
+    def tearDown(self):
+        """Tear down test."""
+        self.datadir.remove_data_dir()
 
     def search_returns_doc(self, doc: dict):
         """Search to elastic search returns doc.
@@ -91,6 +99,35 @@ class TestIndex(unittest.TestCase):
                 'doc': {
                     'lock_format': refresh.Hourly.lock_format(),
                     'lock_value': refresh.Hourly().lock(),
+                }
+            }
+        )
+
+    def test_index_can_store_photo(self):
+        """Test index can store a photo."""
+        self.index.es.index = MagicMock()
+
+        url = Url.from_string('http://example.com')
+        path = PhotoPath(self.datadir)
+
+        photo = LoadingPhoto(
+            url=url,
+            path=path,
+            refresh_rate=refresh.Hourly
+        )
+
+        self.index.save_photo(photo)
+        self.index.es.index.assert_called_with(
+            index='photos',
+            doc_type='photo',
+            id=path.uuid,
+            body={
+                'doc': {
+                    'url_id': url.hash(),
+                    'refresh_rate': refresh.Hourly.lock_format(),
+                    'captured_at': refresh.Hourly().lock(),
+                    'filename': photo.filename(),
+                    'directory': photo.directory()
                 }
             }
         )

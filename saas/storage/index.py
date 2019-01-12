@@ -1,6 +1,7 @@
 """Storage module."""
 
 from __future__ import annotations
+from saas.photographer.photo import Photo
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from saas.storage.refresh import RefreshRate
@@ -110,14 +111,23 @@ class Index:
         """
         prepared = []
         for url in urls:
+            if index == 'crawled':
+                source = {
+                    'url': url.to_string(),
+                    'timestamp': int(time.time()),
+                    'lock_value': '',
+                    'lock_format': ''
+                }
+            else:
+                source = {
+                    'url': url.to_string(),
+                    'timestamp': int(time.time()),
+                }
             prepared.append({
                 '_type': 'url',
                 '_index': index,
                 '_id': url.hash(),
-                '_source': {
-                    'url': url.to_string(),
-                    'timestamp': int(time.time()),
-                }
+                '_source': source
             })
         return prepared
 
@@ -247,6 +257,30 @@ class Index:
                 'lock_value': refresh_rate().lock(),
             }
         })
+
+    def save_photo(self, photo: Photo):
+        """Save photo in index.
+
+        Will not store the actual photo data, this should be stored
+        in the data directory.
+
+        Args:
+            photo: Photo to store
+        """
+        self.es.index(
+            index='photos',
+            doc_type='photo',
+            id=photo.path.uuid,
+            body={
+                'doc': {
+                    'url_id': photo.url.hash(),
+                    'refresh_rate': photo.refresh_rate.lock_format(),
+                    'captured_at': photo.refresh_rate().lock(),
+                    'filename': photo.filename(),
+                    'directory': photo.directory()
+                }
+            }
+        )
 
 
 class Mappings():
