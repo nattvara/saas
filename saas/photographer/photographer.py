@@ -1,10 +1,12 @@
 """Photographer module."""
 
 from __future__ import annotations
-from saas.storage.refresh import RefreshRate
+from saas.photographer.photo import PhotoPath, LoadingPhoto
+from saas.storage.index import EmptySearchResultException
+from saas.storage.datadir import DataDirectory
+import saas.storage.refresh as refresh
 import saas.utils.console as console
 from saas.storage.index import Index
-from saas.storage.index import EmptySearchResultException
 from saas.web.url import Url
 import time
 
@@ -12,7 +14,12 @@ import time
 class Photographer:
     """Photographer class."""
 
-    def __init__(self, index: Index, refresh_rate: RefreshRate):
+    def __init__(
+        self,
+        index: Index,
+        refresh_rate: refresh.RefreshRate,
+        datadir: DataDirectory
+    ):
         """Create new photographer.
 
         Args:
@@ -24,18 +31,27 @@ class Photographer:
         """
         self.index = index
         self.refresh_rate = refresh_rate
+        self.datadir = datadir
 
     def start(self):
         """Start photographer."""
         while True:
+            console.p('.', end='')
             try:
                 url = self.checkout_url()
-                console.pp(url)
+                path = PhotoPath(self.datadir)
+                photo = LoadingPhoto(
+                    url=url,
+                    path=path,
+                    refresh_rate=refresh.Hourly
+                )
+                photo.save_loading_text()
+                self.index.save_photo(photo)
+                console.pp(url.to_string())
             except EmptySearchResultException as e:
                 pass
             finally:
                 time.sleep(1)
-                console.p('.', end='')
 
     def checkout_url(self) -> Url:
         """Checkout url.
