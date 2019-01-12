@@ -28,6 +28,7 @@ class Photographer:
             refresh_rate: How often photographs should be refreshed,
                 more exactly defines which lock should be placed on
                 crawled urls
+            datadir: Data directory to store pictures in
         """
         self.index = index
         self.refresh_rate = refresh_rate
