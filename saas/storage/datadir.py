@@ -74,4 +74,4 @@ class DataDirectory:
         directory = self.root + '/' + first_char + '/'
         if not os.path.exists(directory):
             os.mkdir(directory)
-        return directory + photo_path.uuid
+        return directory + photo_path.uuid + '.png'
