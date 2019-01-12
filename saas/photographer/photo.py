@@ -74,6 +74,12 @@ class LoadingPhoto(Photo):
         file.close()
 
 
+class Screenshot(Photo):
+    """Screenshot photo class."""
+
+    pass
+
+
 class PhotoPath:
     """Photopath class."""
 
