@@ -1,10 +1,12 @@
 """Photographer test."""
 
 from saas.photographer.photographer import Photographer
+from saas.storage.datadir import DataDirectory
 import saas.storage.refresh as refresh
 from saas.storage.index import Index
 from unittest.mock import MagicMock
 from saas.web.url import Url
+from os.path import dirname
 import unittest
 
 
@@ -14,6 +16,12 @@ class TestPhotographer(unittest.TestCase):
     def setUp(self):
         """Set up test."""
         self.index = Index()
+        self.datadir = DataDirectory(dirname(__file__) + '/datadir')
+        self.photographer = Photographer(
+            self.index,
+            refresh.Hourly,
+            self.datadir
+        )
 
     def does_url_checkout(self):
         """Test does checkut of url.
@@ -28,15 +36,12 @@ class TestPhotographer(unittest.TestCase):
         """Test photographer can checkout url from "crawled" index."""
         self.does_url_checkout()
 
-        self.photographer = Photographer(self.index, refresh.Hourly)
         url = self.photographer.checkout_url()
         self.assertIsInstance(cls=Url, obj=url)
 
     def test_photographer_locks_the_url_on_checkout(self):
         """Test photographer locks url on checkout."""
         self.does_url_checkout()
-
-        self.photographer = Photographer(self.index, refresh.Hourly)
 
         url = self.photographer.checkout_url()
         self.index.lock_crawled_url.assert_called_with(
