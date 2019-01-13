@@ -99,12 +99,12 @@ class Url:
             str
         """
         if self.fragment:
-            return self.safe_filename(self.fragment) + '.png'
+            return self._safe_filename(self.fragment) + '.png'
 
         if self.query:
-            return self.safe_filename(self.query) + '.png'
+            return self._safe_filename(self.query) + '.png'
 
-        filename = self.safe_filename(self.path.split('/')[-1:][0])
+        filename = self._safe_filename(self.path.split('/')[-1:][0])
         if filename == '':
             filename = 'index'
         return filename + '.png'
@@ -122,7 +122,7 @@ class Url:
         if self.path:
             dirs = self.path.split('/')
             for i, dir in enumerate(dirs):
-                dirs[i] = self.safe_filename(dir)
+                dirs[i] = self._safe_filename(dir)
             directory = '/'.join(dirs)
         else:
             directory = '/'
@@ -131,10 +131,10 @@ class Url:
             directory += '/'
 
         if self.query:
-            directory += '?/' + self.safe_filename(self.query) + '/'
+            directory += '?/' + self._safe_filename(self.query) + '/'
 
         if self.fragment:
-            directory += '#/' + self.safe_filename(self.fragment) + '/'
+            directory += '#/' + self._safe_filename(self.fragment) + '/'
 
         directory = '/'.join(directory.split('/')[:-2])
 
@@ -143,7 +143,7 @@ class Url:
 
         return directory
 
-    def safe_filename(self, value: str):
+    def _safe_filename(self, value: str):
         """Make safe filename.
 
         Source:

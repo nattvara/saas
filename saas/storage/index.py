@@ -54,7 +54,7 @@ class Index:
         Args:
             urls: A list of urls that have been crawled
         """
-        prepared = self.prepare_urls(urls, 'crawled')
+        prepared = self._prepare_urls(urls, 'crawled')
         bulk(self.es, prepared, request_timeout=80)
 
     def add_uncrawled_urls(self, urls: Url):
@@ -64,7 +64,7 @@ class Index:
             urls: A list of urls that have NOT been crawled yet
         """
         urls = self.remove_already_crawled_urls(urls)
-        prepared = self.prepare_urls(urls, 'uncrawled')
+        prepared = self._prepare_urls(urls, 'uncrawled')
         bulk(self.es, prepared, request_timeout=80)
 
     def remove_already_crawled_urls(self, urls: list) -> list:
@@ -101,7 +101,7 @@ class Index:
                 out.append(url)
         return out
 
-    def prepare_urls(self, urls: list, index: str) -> list:
+    def _prepare_urls(self, urls: list, index: str) -> list:
         """Prepare urls for bulk add.
 
         Args:
@@ -134,7 +134,7 @@ class Index:
             })
         return prepared
 
-    def get_most_recent_uncrawled_url(self):
+    def most_recent_uncrawled_url(self):
         """Get the most recently uncrawled url.
 
         Fetches the most recently added uncrawled url.

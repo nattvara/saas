@@ -14,7 +14,7 @@ class RefreshRate(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def lock_datetime_format(self):
+    def _lock_datetime_format(self):
         """Get the format of lock used to make lock."""
         pass
 
@@ -25,7 +25,7 @@ class RefreshRate(metaclass=ABCMeta):
             Lock to store in index.
             str
         """
-        return datetime.datetime.today().strftime(self.lock_datetime_format())
+        return datetime.datetime.today().strftime(self._lock_datetime_format())
 
 
 class Hourly(RefreshRate):
@@ -38,6 +38,6 @@ class Hourly(RefreshRate):
         """Get the human readable format of lock."""
         return 'hourly'
 
-    def lock_datetime_format(self):
+    def _lock_datetime_format(self):
         """Get the format of lock used to make lock."""
         return '%Y-%m-%d @%H'

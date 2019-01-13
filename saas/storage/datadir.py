@@ -17,9 +17,9 @@ class DataDirectory:
             path: paath to root of data directory
         """
         self.root = path
-        self.root = self.create_dir(self.root)
+        self.root = self._create_dir(self.root)
 
-    def create_dir(self, directory: str) -> str:
+    def _create_dir(self, directory: str) -> str:
         """Create directory.
 
         Args:
@@ -29,7 +29,7 @@ class DataDirectory:
             Absolute path to root directory
             str
         """
-        root = self.real_path(directory)
+        root = self._real_path(directory)
         try:
             os.makedirs(root)
         except OSError as e:
@@ -41,7 +41,7 @@ class DataDirectory:
         """Remove data directory root."""
         shutil.rmtree(self.root)
 
-    def real_path(self, path: str) -> str:
+    def _real_path(self, path: str) -> str:
         """Real path.
 
         Args:

@@ -40,7 +40,7 @@ class Photographer:
         while True:
             console.p('.', end='')
             try:
-                url = self.checkout_url()
+                url = self._checkout_url()
                 console.pp(url.to_string())
 
                 path = PhotoPath(self.datadir)
@@ -62,7 +62,7 @@ class Photographer:
             finally:
                 time.sleep(1)
 
-    def checkout_url(self) -> Url:
+    def _checkout_url(self) -> Url:
         """Checkout url.
 
         A checkout pulls the most recently added url from

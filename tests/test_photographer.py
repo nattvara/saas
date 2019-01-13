@@ -36,14 +36,14 @@ class TestPhotographer(unittest.TestCase):
         """Test photographer can checkout url from "crawled" index."""
         self.does_url_checkout()
 
-        url = self.photographer.checkout_url()
+        url = self.photographer._checkout_url()
         self.assertIsInstance(cls=Url, obj=url)
 
     def test_photographer_locks_the_url_on_checkout(self):
         """Test photographer locks url on checkout."""
         self.does_url_checkout()
 
-        url = self.photographer.checkout_url()
+        url = self.photographer._checkout_url()
         self.index.lock_crawled_url.assert_called_with(
             url,
             refresh.Hourly

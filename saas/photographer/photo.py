@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import saas.storage.datadir as DataDirectory
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 import saas.storage.refresh as refresh
 from saas.web.url import Url
 import uuid
