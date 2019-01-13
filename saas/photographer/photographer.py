@@ -47,14 +47,14 @@ class Photographer:
                 photo = LoadingPhoto(
                     url=url,
                     path=path,
-                    refresh_rate=refresh.Hourly
+                    refresh_rate=self.refresh_rate
                 )
                 photo.save_loading_text()
                 self.index.save_photo(photo)
 
                 self.index.save_photo(photo)
                 camera = Camera()
-                photo = camera.take_picture(url, path, refresh.Hourly)
+                photo = camera.take_picture(url, path, self.refresh_rate)
                 self.index.save_photo(photo)
 
             except EmptySearchResultException as e:
