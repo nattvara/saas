@@ -1,5 +1,6 @@
 """saas entry point."""
 
+from saas.photographer.javascript import JavascriptSnippets
 from saas.photographer.photographer import Photographer
 from saas.storage.datadir import DataDirectory
 from saas.crawler.crawler import Crawler
@@ -16,6 +17,8 @@ def main():
 
         parser = arguments.get_argument_parser()
         args = parser.parse_args(sys.argv[1:])
+
+        JavascriptSnippets.load()
 
         crawler = Crawler(
             url_file=args.url_file,
