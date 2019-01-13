@@ -33,6 +33,13 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--ignore-found-urls',
+        action='store_true',
+        default=False,
+        help='Use flag to ignore urls found on crawled urls',
+    )
+
+    parser.add_argument(
         '--component',
         type=str,
         nargs='?',

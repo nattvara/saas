@@ -5,6 +5,7 @@ import saas.utils.console as console
 from saas.web.browser import Browser
 from saas.storage.index import Index
 from saas.web.url import Url
+import time
 import os
 
 
@@ -19,19 +20,23 @@ class Crawler:
         self,
         url_file: str,
         index: Index,
-        clear_elasticsearch: bool = False
+        clear_elasticsearch: bool=False,
+        ignore_found_urls: bool=False
     ):
         """Create crawler.
 
         Args:
             url_file: path to url file
             index: Index storage for queued urls
-            clear_elasticsearch: elasticsearch cluster should cleared on start
+            clear_elasticsearch: elasticsearch cluster should clearedon start
+            ignore_found_urls: if crawler should ignore new urls found on
+                pages it crawls
         """
         self.source_is_open = False
         self.source_path = ''
         self.open_source('r', url_file)
         self.clear_elasticsearch = clear_elasticsearch
+        self.ignore_found_urls = ignore_found_urls
         self.index = index
 
     def open_source(self, mode: str, url_file: str=''):
@@ -90,9 +95,14 @@ class Crawler:
             self.index.create_indices()
 
         while True:
+            console.p('.', end='')
             url = self.next_url()
+
             if not url:
+                time.sleep(1)
                 continue
+
+            console.eol()
 
             if url is not None:
                 console.p(url.to_string(), end='')
@@ -103,10 +113,14 @@ class Crawler:
                     url,
                     page.status_code
                 )
-                if page.status_code == 200:
-                    page.add_url(url)
-                    self.index.add_uncrawled_urls(page.urls)
-            console.p('.')
+
+                if self.ignore_found_urls:
+                    continue
+
+                if page.status_code != 200:
+                    continue
+
+                self.index.add_uncrawled_urls(page.urls)
 
     def next_url(self):
         """Get next url to crawl.

@@ -23,7 +23,8 @@ def main():
         crawler = Crawler(
             url_file=args.url_file,
             index=Index(),
-            clear_elasticsearch=args.clear_elasticsearch
+            clear_elasticsearch=args.clear_elasticsearch,
+            ignore_found_urls=args.ignore_found_urls,
         )
 
         photographer = Photographer(
