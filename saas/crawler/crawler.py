@@ -143,7 +143,7 @@ class Crawler:
 
         self.open_source('w')
         for line in lines:
-            if line != lines[0]:
+            if line != lines[0] and line.strip() != '':
                 self.source.write(line + '\n')
         self.close_source()
 
