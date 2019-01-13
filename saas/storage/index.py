@@ -201,11 +201,6 @@ class Index:
                             'term': {
                                 'lock_value': refresh_rate().lock(),
                             }
-                        },
-                        {
-                            'term': {
-                                'lock_format': refresh_rate.lock_format(),
-                            }
                         }
                     ]
                 }
