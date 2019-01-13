@@ -5,6 +5,7 @@ import saas.utils.console as console
 from saas.web.browser import Browser
 from saas.storage.index import Index
 from saas.web.url import Url
+import time
 import os
 
 
@@ -19,22 +20,26 @@ class Crawler:
         self,
         url_file: str,
         index: Index,
-        clear_elasticsearch: bool = False
+        clear_elasticsearch: bool=False,
+        ignore_found_urls: bool=False
     ):
         """Create crawler.
 
         Args:
             url_file: path to url file
             index: Index storage for queued urls
-            clear_elasticsearch: elasticsearch cluster should cleared on start
+            clear_elasticsearch: elasticsearch cluster should clearedon start
+            ignore_found_urls: if crawler should ignore new urls found on
+                pages it crawls
         """
         self.source_is_open = False
         self.source_path = ''
-        self.open_source('r', url_file)
+        self._open_source('r', url_file)
         self.clear_elasticsearch = clear_elasticsearch
+        self.ignore_found_urls = ignore_found_urls
         self.index = index
 
-    def open_source(self, mode: str, url_file: str=''):
+    def _open_source(self, mode: str, url_file: str=''):
         """Open source file.
 
         Args:
@@ -47,11 +52,11 @@ class Crawler:
         if self.source_is_open and self.source_mode == mode:
             return
         if self.source_is_open and self.source_mode != mode:
-            self.close_source()
+            self._close_source()
         self.source_is_open = True
 
         if self.source_path == '':
-            file = self.real_path(url_file)
+            file = self._real_path(url_file)
             if not os.path.isfile(file):
                 raise UrlFileNotFoundError(f'url file was not found at {file}')
             self.source_path = file
@@ -59,12 +64,12 @@ class Crawler:
         self.source_mode = mode
         self.source = open(self.source_path, mode)
 
-    def close_source(self):
+    def _close_source(self):
         """Close url source file."""
         self.source_is_open = False
         self.source.close()
 
-    def real_path(self, url_file: str) -> str:
+    def _real_path(self, url_file: str) -> str:
         """Real path.
 
         Args:
@@ -76,6 +81,7 @@ class Crawler:
         """
         if url_file[0] == '~':
             root = os.path.expanduser('~')
+            url_file = url_file[1:]
         elif url_file[0] == '/':
             root = '/'
         else:
@@ -89,9 +95,14 @@ class Crawler:
             self.index.create_indices()
 
         while True:
-            url = self.next_url()
+            console.p('.', end='')
+            url = self._next_url()
+
             if not url:
+                time.sleep(1)
                 continue
+
+            console.eol()
 
             if url is not None:
                 console.p(url.to_string(), end='')
@@ -102,47 +113,51 @@ class Crawler:
                     url,
                     page.status_code
                 )
-                if page.status_code == 200:
-                    page.add_url(url)
-                    self.index.add_uncrawled_urls(page.urls)
-            console.p('.')
 
-    def next_url(self):
+                if self.ignore_found_urls:
+                    continue
+
+                if page.status_code != 200:
+                    continue
+
+                self.index.add_uncrawled_urls(page.urls)
+
+    def _next_url(self):
         """Get next url to crawl.
 
         Returns:
             A url to crawl, None if no url was found
             Url or None
         """
-        self.open_source('r')
+        self._open_source('r')
         lines = sum(1 for line in self.source)
 
         if lines == 0:
-            return self.next_url_in_index()
+            return self._next_url_in_index()
 
         self.source.seek(0)
         lines = self.source.read().split('\n')
 
         if lines[0] == '':
-            return self.next_url_in_index()
+            return self._next_url_in_index()
 
-        self.open_source('w')
+        self._open_source('w')
         for line in lines:
-            if line != lines[0]:
+            if line != lines[0] and line.strip() != '':
                 self.source.write(line + '\n')
-        self.close_source()
+        self._close_source()
 
         url = Url.from_string(lines[0])
         return url
 
-    def next_url_in_index(self):
+    def _next_url_in_index(self):
         """Get next url to crawl from index.
 
         Returns:
             A url to crawl, None if no url was found
             Url or None
         """
-        doc = self.index.get_most_recent_uncrawled_url()
+        doc = self.index.most_recent_uncrawled_url()
         if doc is None:
             return None
         self.index.remove_uncrawled_url(doc['_id'])
@@ -150,7 +165,7 @@ class Crawler:
 
     def stop(self):
         """Stop crawler."""
-        self.close_source()
+        self._close_source()
 
 
 class UrlFileNotFoundError(ValueError):

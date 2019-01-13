@@ -42,3 +42,8 @@ def p(var, end=None):
     else:
         print(var)
     sys.stdout.flush()
+
+
+def eol():
+    """Print end of line character."""
+    p('')

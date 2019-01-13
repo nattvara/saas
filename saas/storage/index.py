@@ -1,8 +1,10 @@
 """Storage module."""
 
 from __future__ import annotations
+from saas.photographer.photo import Photo
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+from saas.storage.refresh import RefreshRate
 import saas.utils.console as console
 from saas.web.url import Url
 import time
@@ -33,6 +35,9 @@ class Index:
         self.es.indices.create('crawled', body={
             'mappings': Mappings.crawled
         })
+        self.es.indices.create('photos', body={
+            'mappings': Mappings.photos
+        })
         console.p('done.')
 
     def add_crawled_url(self, url: Url):
@@ -49,7 +54,7 @@ class Index:
         Args:
             urls: A list of urls that have been crawled
         """
-        prepared = self.prepare_urls(urls, 'crawled')
+        prepared = self._prepare_urls(urls, 'crawled')
         bulk(self.es, prepared, request_timeout=80)
 
     def add_uncrawled_urls(self, urls: Url):
@@ -59,7 +64,7 @@ class Index:
             urls: A list of urls that have NOT been crawled yet
         """
         urls = self.remove_already_crawled_urls(urls)
-        prepared = self.prepare_urls(urls, 'uncrawled')
+        prepared = self._prepare_urls(urls, 'uncrawled')
         bulk(self.es, prepared, request_timeout=80)
 
     def remove_already_crawled_urls(self, urls: list) -> list:
@@ -96,7 +101,7 @@ class Index:
                 out.append(url)
         return out
 
-    def prepare_urls(self, urls: list, index: str) -> list:
+    def _prepare_urls(self, urls: list, index: str) -> list:
         """Prepare urls for bulk add.
 
         Args:
@@ -109,18 +114,27 @@ class Index:
         """
         prepared = []
         for url in urls:
+            if index == 'crawled':
+                source = {
+                    'url': url.to_string(),
+                    'timestamp': int(time.time()),
+                    'lock_value': '',
+                    'lock_format': ''
+                }
+            else:
+                source = {
+                    'url': url.to_string(),
+                    'timestamp': int(time.time()),
+                }
             prepared.append({
                 '_type': 'url',
                 '_index': index,
                 '_id': url.hash(),
-                '_source': {
-                    'url': url.to_string(),
-                    'timestamp': time.time(),
-                }
+                '_source': source
             })
         return prepared
 
-    def get_most_recent_uncrawled_url(self):
+    def most_recent_uncrawled_url(self):
         """Get the most recently uncrawled url.
 
         Fetches the most recently added uncrawled url.
@@ -134,10 +148,10 @@ class Index:
                   "_score": null,
                   "_source": {
                     "url": "http://example.com",
-                    "timestamp": 1547145709.426097
+                    "timestamp": 1547145709
                   },
                   "sort": [
-                    1547145709000
+                    1547145709
                   ]
                 }
             dict or None
@@ -160,6 +174,51 @@ class Index:
 
         return res['hits']['hits'][0]
 
+    def most_recent_crawled_url(self, refresh_rate=RefreshRate):
+        """Get most the url that was most recently crawled.
+
+        Args:
+            refresh_rate: the refresh reate to search for and
+                use to avoid locked urls
+
+        Returns:
+            A url that has been crawled with status code 200
+            Url
+
+        Raises:
+            EmptySearchResultException: if no url was found
+        """
+        res = self.es.search(index='crawled', size=1, body={
+            'query': {
+                'bool': {
+                    'must': {
+                        'term': {
+                            'status_code': 200,
+                        }
+                    },
+                    'must_not': [
+                        {
+                            'term': {
+                                'lock_value': refresh_rate().lock(),
+                            }
+                        }
+                    ]
+                }
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ]
+        })
+
+        if res['hits']['total'] == 0:
+            raise EmptySearchResultException('no crawled url was found')
+
+        return Url.from_string(res['hits']['hits'][0]['_source']['url'])
+
     def remove_uncrawled_url(self, id: str):
         """Remove url from uncrawled index.
 
@@ -180,6 +239,46 @@ class Index:
                 'status_code': status_code
             }
         })
+
+    def lock_crawled_url(self, url: Url, refresh_rate: RefreshRate):
+        """Lock a crawld url.
+
+        Place a lock on a crawled url for a given refresh rate.
+
+        Args:
+            url: Url to lock
+            refresh_rate: Refresh rate to use (Hourly, Daily, etc.)
+        """
+        self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
+            'doc': {
+                'lock_format': refresh_rate.lock_format(),
+                'lock_value': refresh_rate().lock(),
+            }
+        })
+
+    def save_photo(self, photo: Photo):
+        """Save photo in index.
+
+        Will not store the actual photo data, this should be stored
+        in the data directory.
+
+        Args:
+            photo: Photo to store
+        """
+        self.es.index(
+            index='photos',
+            doc_type='photo',
+            id=photo.path.uuid,
+            body={
+                'doc': {
+                    'url_id': photo.url.hash(),
+                    'refresh_rate': photo.refresh_rate.lock_format(),
+                    'captured_at': photo.refresh_rate().lock(),
+                    'filename': photo.filename(),
+                    'directory': photo.directory()
+                }
+            }
+        )
 
 
 class Mappings():
@@ -223,7 +322,41 @@ class Mappings():
                 'timestamp': {
                     'type': 'date',
                     'format': 'epoch_second',
+                },
+                'lock_format': {
+                    'type': 'text'
+                },
+                'lock_value': {
+                    'type': 'text'
                 }
             }
         }
     }
+
+    photos = {
+        'photo': {
+            'properties': {
+                'url_id': {
+                    'type': 'text',
+                },
+                'refresh_rate': {
+                    'type': 'text'
+                },
+                'captured_at': {
+                    'type': 'text'
+                },
+                'filename': {
+                    'type': 'text'
+                },
+                'directory': {
+                    'type': 'text'
+                }
+            }
+        }
+    }
+
+
+class EmptySearchResultException(Exception):
+    """Empty search result."""
+
+    pass

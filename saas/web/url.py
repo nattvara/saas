@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 from urllib.parse import urlparse
+import unicodedata
 import hashlib
+import re
 
 
 class Url:
@@ -50,6 +52,9 @@ class Url:
         path = parse.path
         while '//' in path:
             path = path.replace('//', '/')
+        if len(path) > 0:
+            if path[-1:] == '/':
+                path = path[:-1]
         return Url(
             scheme=parse.scheme,
             domain=parse.netloc,
@@ -72,7 +77,7 @@ class Url:
             url = f'{url}#{self.fragment}'
         return url
 
-    def hash(self):
+    def hash(self) -> str:
         """Get sha256 hash of url.
 
         Returns:
@@ -83,6 +88,85 @@ class Url:
             return self.sha256
         self.sha256 = hashlib.sha256(self.to_string().encode()).hexdigest()
         return self.sha256
+
+    def make_filename(self) -> str:
+        """Make filename.
+
+        Make the filename used in filesystem.
+
+        Returns:
+            A safe filename to use in filesystem
+            str
+        """
+        if self.fragment:
+            return self._safe_filename(self.fragment) + '.png'
+
+        if self.query:
+            return self._safe_filename(self.query) + '.png'
+
+        filename = self._safe_filename(self.path.split('/')[-1:][0])
+        if filename == '':
+            filename = 'index'
+        return filename + '.png'
+
+    def make_directory(self) -> str:
+        """Make directory.
+
+        Make the relative path from data directory root directly
+        above the result from make_filename().
+
+        Returns:
+            A path to url in data directory that is safe to use
+            str
+        """
+        if self.path:
+            dirs = self.path.split('/')
+            for i, dir in enumerate(dirs):
+                dirs[i] = self._safe_filename(dir)
+            directory = '/'.join(dirs)
+        else:
+            directory = '/'
+
+        if directory[-1:] != '/':
+            directory += '/'
+
+        if self.query:
+            directory += '?/' + self._safe_filename(self.query) + '/'
+
+        if self.fragment:
+            directory += '#/' + self._safe_filename(self.fragment) + '/'
+
+        directory = '/'.join(directory.split('/')[:-2])
+
+        if directory[-1:] != '/':
+            directory += '/'
+
+        return directory
+
+    def _safe_filename(self, value: str):
+        """Make safe filename.
+
+        Source:
+            https://github.com/django/django/blob/master/django/utils/text.py
+            basically copied the slugify function and added some handling
+            of query params
+
+        Args:
+            value: A string value that might be unsafe for a filename
+
+        Returns:
+            A safe string to use as filename
+            str
+        """
+        value = str(value)
+        value = value.replace('=', '-')
+        value = value.replace('&', '-and-')
+        value = unicodedata.normalize(
+            'NFKD',
+            value
+        ).encode('ascii', 'ignore').decode('ascii')
+        value = re.sub(r'[^\w\s-]', '', value).strip().lower()
+        return re.sub(r'[-\s]+', '-', value)
 
     def create_child_url(self, uri: str) -> 'Url':
         """Create child url from string.

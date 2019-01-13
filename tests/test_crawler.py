@@ -41,7 +41,7 @@ class TestCrawler(unittest.TestCase):
         self.crawler = Crawler(self.path_to_url_source, Index())
         self.assertEqual(
             Url.from_string('https://example.com').to_string(),
-            self.crawler.next_url().to_string()
+            self.crawler._next_url().to_string()
         )
 
     def test_crawler_removes_urls_read_from_source(self):
@@ -55,19 +55,19 @@ class TestCrawler(unittest.TestCase):
         # first line should now be https://example.com
         self.assertEqual(
             Url.from_string('https://example.com').to_string(),
-            self.crawler.next_url().to_string()
+            self.crawler._next_url().to_string()
         )
 
         # first line should now be https://example.com/foo
         self.assertEqual(
             Url.from_string('https://example.com/foo').to_string(),
-            self.crawler.next_url().to_string()
+            self.crawler._next_url().to_string()
         )
 
         # first line should now be https://example.com/bar
         self.assertEqual(
             Url.from_string('https://example.com/bar').to_string(),
-            self.crawler.next_url().to_string()
+            self.crawler._next_url().to_string()
         )
 
         self.crawler = Crawler(self.path_to_url_source, Index())
@@ -76,7 +76,7 @@ class TestCrawler(unittest.TestCase):
         """Test crawler can read next url from source."""
         index = Index()
         index.remove_uncrawled_url = MagicMock()
-        index.get_most_recent_uncrawled_url = MagicMock(
+        index.most_recent_uncrawled_url = MagicMock(
             return_value={
                 '_index': 'uncrawled',
                 '_type': 'url',
@@ -92,19 +92,19 @@ class TestCrawler(unittest.TestCase):
 
         self.assertEqual(
             Url.from_string('https://example.com/foo').to_string(),
-            self.crawler.next_url().to_string()
+            self.crawler._next_url().to_string()
         )
         index.remove_uncrawled_url.assert_called_with('xxx...')
 
     def test_next_url_returns_none_if_no_url_was_found(self):
-        """Test next_url() returns None if no url was found."""
+        """Test _next_url() returns None if no url was found."""
         index = Index()
-        index.get_most_recent_uncrawled_url = MagicMock(return_value=None)
+        index.most_recent_uncrawled_url = MagicMock(return_value=None)
         self.crawler = Crawler(self.path_to_url_source, index)
 
         self.assertEqual(
             None,
-            self.crawler.next_url()
+            self.crawler._next_url()
         )
 
 
