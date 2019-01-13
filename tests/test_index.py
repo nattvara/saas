@@ -119,13 +119,12 @@ class TestIndex(unittest.TestCase):
             doc_type='photo',
             id=path.uuid,
             body={
-                'doc': {
-                    'url_id': url.hash(),
-                    'refresh_rate': refresh.Hourly.lock_format(),
-                    'captured_at': refresh.Hourly().lock(),
-                    'filename': photo.filename(),
-                    'directory': photo.directory()
-                }
+                'url_id': url.hash(),
+                'refresh_rate': refresh.Hourly.lock_format(),
+                'captured_at': refresh.Hourly().lock(),
+                'filename': photo.filename(),
+                'directory': photo.directory(),
+                'domain': photo.domain()
             }
         )
 

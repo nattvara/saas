@@ -36,7 +36,8 @@ class Index:
             'mappings': Mappings.crawled
         })
         self.es.indices.create('photos', body={
-            'mappings': Mappings.photos
+            'mappings': Mappings.photos,
+            'settings': Settings.photos,
         })
         console.p('done.')
 
@@ -270,18 +271,17 @@ class Index:
             doc_type='photo',
             id=photo.path.uuid,
             body={
-                'doc': {
-                    'url_id': photo.url.hash(),
-                    'refresh_rate': photo.refresh_rate.lock_format(),
-                    'captured_at': photo.refresh_rate().lock(),
-                    'filename': photo.filename(),
-                    'directory': photo.directory()
-                }
+                'url_id': photo.url.hash(),
+                'refresh_rate': photo.refresh_rate.lock_format(),
+                'captured_at': photo.refresh_rate().lock(),
+                'filename': photo.filename(),
+                'directory': photo.directory(),
+                'domain': photo.domain(),
             }
         )
 
 
-class Mappings():
+class Mappings:
     """Mappings for elasticsearch indices."""
 
     uncrawled = {
@@ -346,10 +346,36 @@ class Mappings():
                     'type': 'text'
                 },
                 'filename': {
-                    'type': 'text'
+                    'type': 'text',
                 },
                 'directory': {
-                    'type': 'text'
+                    'type': 'text',
+                    'analyzer': 'analyzer_directory',
+                    'fielddata': True
+                },
+                'domain': {
+                    'type': 'text',
+                    'analyzer': 'analyzer_domain',
+                }
+            }
+        }
+    }
+
+
+class Settings:
+    """Settings for elasticsearch indices."""
+
+    photos = {
+        'index': {
+            'analysis': {
+                'analyzer': {
+                    'analyzer_domain': {
+                        'tokenizer': 'whitespace',
+                        'filter': 'lowercase'
+                    },
+                    'analyzer_directory': {
+                        'tokenizer': 'path_hierarchy'
+                    }
                 }
             }
         }
