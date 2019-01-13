@@ -4,6 +4,7 @@ from __future__ import annotations
 from saas.photographer.photo import PhotoPath, LoadingPhoto
 from saas.storage.index import EmptySearchResultException
 from saas.storage.datadir import DataDirectory
+from saas.photographer.camera import Camera
 import saas.storage.refresh as refresh
 import saas.utils.console as console
 from saas.storage.index import Index
@@ -40,6 +41,8 @@ class Photographer:
             console.p('.', end='')
             try:
                 url = self.checkout_url()
+                console.pp(url.to_string())
+
                 path = PhotoPath(self.datadir)
                 photo = LoadingPhoto(
                     url=url,
@@ -48,7 +51,12 @@ class Photographer:
                 )
                 photo.save_loading_text()
                 self.index.save_photo(photo)
-                console.pp(url.to_string())
+
+                self.index.save_photo(photo)
+                camera = Camera()
+                photo = camera.take_picture(url, path, refresh.Hourly)
+                self.index.save_photo(photo)
+
             except EmptySearchResultException as e:
                 pass
             finally:
