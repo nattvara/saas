@@ -29,7 +29,7 @@ def main():
 
         photographer = Photographer(
             index=Index(),
-            refresh_rate=refresh.Hourly,
+            refresh_rate=refresh.EveryMinute,
             datadir=DataDirectory(args.data_dir)
         )
 
