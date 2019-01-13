@@ -41,3 +41,18 @@ class Hourly(RefreshRate):
     def _lock_datetime_format(self):
         """Get the format of lock used to make lock."""
         return '%Y%m%d%H'
+
+
+class EveryMinute(RefreshRate):
+    """Refresh every minute.
+
+    Refresh photographs every minute.
+    """
+
+    def lock_format():
+        """Get the human readable format of lock."""
+        return 'minute'
+
+    def _lock_datetime_format(self):
+        """Get the format of lock used to make lock."""
+        return '%Y%m%d%H%M'
