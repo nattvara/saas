@@ -68,10 +68,7 @@ class TestIndex(unittest.TestCase):
                                 'term': {
                                     'lock_value': refresh.Hourly().lock(),
                                 }
-                            },
-                            {'term': {
-                                'lock_format': refresh.Hourly.lock_format(),
-                            }}
+                            }
                         ]
                     }
                 },
