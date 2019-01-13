@@ -3,8 +3,8 @@
 from saas.photographer.photo import PhotoPath, LoadingPhoto
 from saas.storage.datadir import DataDirectory
 import saas.storage.refresh as refresh
-from saas.web.url import Url
 from os.path import dirname, isfile
+from saas.web.url import Url
 import unittest
 
 
