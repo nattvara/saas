@@ -58,6 +58,15 @@ class Photo(metaclass=ABCMeta):
         """
         return self.url.make_directory()
 
+    def domain(self) -> str:
+        """Get photo domain.
+
+        Returns:
+            Domain photo belongs to
+            str
+        """
+        return self.url.domain
+
 
 class LoadingPhoto(Photo):
     """Loading photo class.
