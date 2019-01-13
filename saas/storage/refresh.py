@@ -40,4 +40,4 @@ class Hourly(RefreshRate):
 
     def _lock_datetime_format(self):
         """Get the format of lock used to make lock."""
-        return '%Y-%m-%d @%H'
+        return '%Y%m%d%H'
