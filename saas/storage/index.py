@@ -4,6 +4,7 @@ from __future__ import annotations
 from saas.photographer.photo import Photo, PhotoPath, Screenshot
 from saas.storage.datadir import DataDirectory
 from saas.storage.refresh import RefreshRate
+from saas.mount.file import LastCapture
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import saas.utils.console as console
@@ -360,6 +361,57 @@ class Index:
             unique.append(bucket['key'])
         return unique
 
+    def photos_most_recent_capture_of_domain(
+        self,
+        domain: str,
+        refresh_rate: RefreshRate
+    ) -> str:
+        """Get most recently captured_at value of domain.
+
+        Args:
+            domain: domain to check
+            refresh_rate: Given refresh rate photo was taken with
+
+        Returns:
+            The most recent capture_at value in photos index
+            str
+
+        Raises:
+            EmptySearchResultException: if no capture_at value was found
+        """
+        res = self.es.search(index='photos', size=1, body={
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'domain': domain
+                            }
+                        },
+                        {
+                            'term': {
+                                'refresh_rate': refresh_rate.lock_format()
+                            }
+                        }
+                    ]
+                }
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ]
+        })
+
+        if res['hits']['total'] == 0:
+            raise EmptySearchResultException(
+                f'no capture for given refresh rate and {domain} was found'
+            )
+
+        return res['hits']['hits'][0]['_source']['captured_at']
+
     def photos_get_photo(
         self,
         domain: str,
@@ -386,6 +438,13 @@ class Index:
         directory = '/'.join(full_filename.split('/')[:-1])
         directory = directory.rstrip('/') + '/'
         filename = full_filename.split('/')[-1:][0]
+
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
 
         res = self.es.search(index='photos', size=1, body={
             'query': {
@@ -458,6 +517,12 @@ class Index:
             is returned
             bool or int
         """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
         try:
             photo = self.photos_get_photo(
                 domain,
@@ -488,6 +553,12 @@ class Index:
             True if photo was found, else False
             bool
         """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
         res = self.es.search(index='photos', size=0, body={
             'query': {
                 'bool': {
@@ -548,6 +619,12 @@ class Index:
             A list of files
             list
         """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
         res = self.es.search(index='photos', size=10000, body={
             'query': {
                 'bool': {
@@ -600,6 +677,12 @@ class Index:
             A list of directories
             list
         """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
         res = self.es.search(index='photos', size=0, body={
             'query': {
                 'bool': {

@@ -1,6 +1,8 @@
 """File module."""
 
 from __future__ import annotations
+from saas.storage.refresh import RefreshRate
+import saas.storage.index as idx
 import time
 import os
 
@@ -208,3 +210,99 @@ class File:
             'st_size': filesize,
             'st_uid': os.getuid(),
         }
+
+
+class LastCapture:
+    """Last captured class.
+
+    The last capture is the most recent capture of a domain.
+    This class helps convert last capture placeholder to
+    real captured_at value.
+    """
+
+    FILENAME = 'latest'
+
+    CACHE_AGE_LIMIT = 60
+
+    captures = {}
+
+    cached_at = {}
+
+    def translate(
+        captured_at: str,
+        domain: str,
+        index: idx.Index,
+        refresh_rate: RefreshRate
+    ) -> str:
+        """Translate captured_at to cached value.
+
+        If a captured_at value is FILENAME this will translate
+        it to the most recent captured_at value for given
+        domain and refresh_rate
+
+        Args:
+            captured_at: photos captured at
+            domain: photos from a given domain
+            index: Index photos are stored in
+            refresh_rate: refresh rate capture should be for
+
+        Returns:
+            original value if captured_at was not FILENAME, if it
+            was FILENAME then the most recent captured_at value is returned
+            str
+        """
+        try:
+            if captured_at == LastCapture.FILENAME:
+                if not LastCapture._is_cached(domain):
+                    LastCapture._update(domain, index, refresh_rate)
+                captured_at = LastCapture._from_cache(domain)
+        except idx.EmptySearchResultException:
+            pass
+        return captured_at
+
+    def _from_cache(domain: str) -> str:
+        """Get last capture of domain from cache.
+
+        Args:
+            domain: last capture of domain
+
+        Returns:
+            Last captured_at value
+            str
+        """
+        return LastCapture.captures[domain]
+
+    def _is_cached(domain: str) -> bool:
+        """Check if last capture has a valid cache.
+
+        Args:
+            domain: last capture of domain
+
+        Returns:
+            True if a valid cache exists, otherwise False
+            bool
+        """
+        if domain not in LastCapture.captures:
+            return False
+
+        cache_age = time.time() - LastCapture.cached_at[domain]
+
+        if cache_age > LastCapture.CACHE_AGE_LIMIT:
+            return False
+
+        return True
+
+    def _update(domain: str, index: idx.Index, refresh_rate: RefreshRate):
+        """Update cache.
+
+        Args:
+            domain: domain to cache
+            index: Index photos are stored in
+            refresh_rate: refresh rate capture should be for
+        """
+        capture = index.photos_most_recent_capture_of_domain(
+            domain,
+            refresh_rate
+        )
+        LastCapture.captures[domain] = capture
+        LastCapture.cached_at[domain] = time.time()

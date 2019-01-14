@@ -1,8 +1,8 @@
 """Filesystem module."""
 
 from __future__ import annotations
+from saas.mount.file import Path, Directory, File, LastCapture
 from saas.storage.index import Index, PhotoNotFoundException
-from saas.mount.file import Path, Directory, File
 from saas.storage.refresh import RefreshRate
 from saas.utils.files import real_path
 from fuse import FUSE, Operations
@@ -216,6 +216,8 @@ class Filesystem(Operations):
         )
         for file in captures:
             files.append(Directory(file))
+
+        files.append(Directory(LastCapture.FILENAME))
 
         return files
 

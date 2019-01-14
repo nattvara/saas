@@ -1,8 +1,9 @@
 """Filesystem test."""
 
-from saas.mount.filesystem import Filesystem, Directory, File
 from saas.photographer.photo import PhotoPath, Screenshot
+from saas.mount.file import Directory, File, LastCapture
 from saas.storage.datadir import DataDirectory
+from saas.mount.filesystem import Filesystem
 from unittest.mock import MagicMock, call
 import saas.storage.refresh as refresh
 from saas.storage.index import Index
@@ -76,6 +77,7 @@ class TestFilesystem(unittest.TestCase):
             Directory('2019-01-13H20:00'),
             Directory('2019-01-13H21:00'),
             Directory('2019-01-13H22:00'),
+            Directory(LastCapture.FILENAME),
         ]
 
         files = self.filesystem._list('/example.com')
