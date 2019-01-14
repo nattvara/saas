@@ -19,6 +19,13 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        'mountpoint',
+        type=str,
+        default=None,
+        help='''Where to mount filesystem via FUSE''',
+    )
+
+    parser.add_argument(
         '--data-dir',
         type=str,
         default='~/.saas-data-dir',
