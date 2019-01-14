@@ -15,6 +15,7 @@ setup(
         'beeprint',
         'elasticsearch',
         'selenium',
+        'fusepy',
     ],
     entry_points={
         'console_scripts': [
