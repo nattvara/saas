@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 import saas.storage.datadir as DataDirectory
-from abc import ABCMeta
 import saas.storage.refresh as refresh
 from saas.web.url import Url
+from abc import ABCMeta
 import uuid
+import os
 
 
 class Photo(metaclass=ABCMeta):
@@ -15,7 +16,8 @@ class Photo(metaclass=ABCMeta):
         self,
         url: Url,
         path: 'PhotoPath',
-        refresh_rate: refresh.RefreshRate
+        refresh_rate: refresh.RefreshRate,
+        index_filesize: int=None
     ):
         """Create new photo.
 
@@ -23,10 +25,14 @@ class Photo(metaclass=ABCMeta):
             url: The photo is taken of given Url
             path: Path to photo in data directory
             refresh_rate: The refresh rate of the photo (hourly, daily, etc.)
+            index_filesize: If photo have been stored in index, filesize is
+                already stored there. To speed up performance this takes
+                priority over filesize in datadir. see self.filesize()
         """
         self.url = url
         self.path = path
         self.refresh_rate = refresh_rate
+        self.index_filesize = index_filesize
 
     def get_raw(self) -> str:
         """Get raw content of photos file in data directory.
@@ -67,6 +73,17 @@ class Photo(metaclass=ABCMeta):
         """
         return self.url.domain
 
+    def filesize(self) -> int:
+        """Get photo filesize.
+
+        Returns:
+            Size in bytes
+            int
+        """
+        if self.index_filesize:
+            return self.index_filesize
+        return self.path.filesize()
+
 
 class LoadingPhoto(Photo):
     """Loading photo class.
@@ -92,14 +109,20 @@ class Screenshot(Photo):
 class PhotoPath:
     """Photopath class."""
 
-    def __init__(self, datadir: DataDirectory.DataDirectory):
+    def __init__(self, datadir: DataDirectory.DataDirectory, uuid: str=''):
         """Create new path to a photo.
 
         Args:
             datadir: Data directory to store photo in
+            uuid: If an PhotoPath should represent an existing
+                path, use uuid argument, otherwise a new uuid
+                will be generated
         """
         self.datadir = datadir
-        self.uuid = self.make_uuid()
+        if uuid != '':
+            self.uuid = uuid
+        else:
+            self.uuid = self.make_uuid()
 
     def make_uuid(self) -> str:
         """Make uuid.
@@ -118,3 +141,12 @@ class PhotoPath:
             str
         """
         return self.datadir.path_for_photo(self)
+
+    def filesize(self) -> int:
+        """Get filesize.
+
+        Returns:
+            Size in bytes
+            int
+        """
+        return os.path.getsize(self.full_path())
