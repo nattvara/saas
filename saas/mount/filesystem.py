@@ -48,6 +48,26 @@ class Filesystem(Operations):
         self.index = index
         self.refresh_rate = refresh_rate
 
+    def write(self, path: str, data: str, offset: int, fh: int):
+        """Write to file.
+
+        Disabled.
+
+        Args:
+            path: path to file
+            data: data to write
+            length: number of bytes to read
+            offset: where to start in file
+
+        Raises:
+            IOError: will always raise this exception
+        """
+        raise IOError(
+            errno.EPERM,
+            os.strerror(errno.EPERM),
+            path
+        )
+
     def getattr(self, path: str, fh=None) -> dict:
         """Get attributes of file.
 
@@ -68,11 +88,7 @@ class Filesystem(Operations):
             pass
         except FileNotFoundError:
             pass
-        raise FileNotFoundError(
-            errno.ENOENT,
-            os.strerror(errno.ENOENT),
-            path
-        )
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
 
     def readdir(self, path: str, fh: int) -> str:
         """Read directory.
@@ -138,9 +154,19 @@ class Filesystem(Operations):
         path = Path(path)
 
         if path.includes_domain() and not path.includes_captured_at():
+            domains = self.index.photos_unique_domains(self.refresh_rate)
+            if path.domain not in domains:
+                raise FileNotFoundError(f'Unkown domain: {path.domain}')
             return Directory.attributes()
 
         if path.includes_captured_at() and not path.includes_end():
+            captures = self.index.photos_unique_captures_of_domain(
+                path.domain,
+                self.refresh_rate
+            )
+            captures.append(LastCapture.FILENAME)
+            if path.captured_at not in captures:
+                raise FileNotFoundError(f'Unkown capture: {path.captured_at}')
             return Directory.attributes()
 
         if self.index.photos_directory_exists(
