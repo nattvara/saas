@@ -4,11 +4,11 @@ from __future__ import annotations
 from saas.photographer.photo import Photo, PhotoPath, Screenshot
 from saas.storage.datadir import DataDirectory
 from saas.storage.refresh import RefreshRate
-from saas.mount.file import LastCapture
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import saas.utils.console as console
 from saas.web.url import Url, UrlId
+import saas.mount.file as file
 import time
 
 
@@ -18,14 +18,23 @@ class Index:
     Wrapper around elasticsearch api
     """
 
-    def __init__(self, datadir: DataDirectory=None):
+    def __init__(
+        self,
+        datadir: DataDirectory=None,
+        es_client: Elasticsearch=None
+    ):
         """Create new index.
 
         Args:
             datadir: Data directory (default: {None})
+            es_client: Elasticsearch client,
+                useful in testing (default: {None})
         """
-        self.es = Elasticsearch(max_retries=2, retry_on_timeout=True)
         self.datadir = datadir
+        if es_client is not None:
+            self.es = es_client
+        else:
+            self.es = Elasticsearch(max_retries=2, retry_on_timeout=True)
 
     def clear(self):
         """Clear all documents."""
@@ -439,7 +448,7 @@ class Index:
         directory = directory.rstrip('/') + '/'
         filename = full_filename.split('/')[-1:][0]
 
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -517,7 +526,7 @@ class Index:
             is returned
             bool or int
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -553,7 +562,7 @@ class Index:
             True if photo was found, else False
             bool
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -619,7 +628,7 @@ class Index:
             A list of files
             list
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -677,7 +686,7 @@ class Index:
             A list of directories
             list
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
