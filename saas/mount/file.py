@@ -146,6 +146,8 @@ class Directory:
 
     ST_MODE = 0o40755
 
+    TIME = 0
+
     def __init__(self, filename: str):
         """Create new directory.
 
@@ -154,6 +156,8 @@ class Directory:
         """
         self.filename = filename
         self.st_mode = Directory.ST_MODE  # Permissions
+        if Directory.TIME == 0:
+            Directory.TIME = time.time()
 
     def attributes(self=None) -> dict:
         """Get attributes of file.
@@ -166,11 +170,11 @@ class Directory:
             dict
         """
         return {
-            'st_atime': time.time(),
-            'st_ctime': time.time(),
+            'st_atime': Directory.TIME,
+            'st_ctime': Directory.TIME,
             'st_gid': os.getgid(),
             'st_mode': Directory.ST_MODE,
-            'st_mtime': time.time(),
+            'st_mtime': Directory.TIME,
             'st_size': 0,
             'st_uid': os.getuid(),
         }
@@ -181,6 +185,8 @@ class File:
 
     ST_MODE = 0o100644
 
+    TIME = 0
+
     def __init__(self, filename: str):
         """Create new file.
 
@@ -189,6 +195,8 @@ class File:
         """
         self.filename = filename
         self.st_mode = File.ST_MODE  # Permissions
+        if File.TIME == 0:
+            File.TIME = time.time()
 
     def attributes(self=None, filesize: int=0) -> dict:
         """Get attributes of file.
@@ -202,11 +210,11 @@ class File:
             dict
         """
         return {
-            'st_atime': time.time(),
-            'st_ctime': time.time(),
+            'st_atime': File.TIME,
+            'st_ctime': File.TIME,
             'st_gid': os.getgid(),
             'st_mode': File.ST_MODE,
-            'st_mtime': time.time(),
+            'st_mtime': File.TIME,
             'st_size': filesize,
             'st_uid': os.getuid(),
         }
