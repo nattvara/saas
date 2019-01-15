@@ -48,26 +48,6 @@ class Filesystem(Operations):
         self.index = index
         self.refresh_rate = refresh_rate
 
-    def write(self, path: str, data: str, offset: int, fh: int):
-        """Write to file.
-
-        Disabled.
-
-        Args:
-            path: path to file
-            data: data to write
-            length: number of bytes to read
-            offset: where to start in file
-
-        Raises:
-            IOError: will always raise this exception
-        """
-        raise IOError(
-            errno.EPERM,
-            os.strerror(errno.EPERM),
-            path
-        )
-
     def getattr(self, path: str, fh=None) -> dict:
         """Get attributes of file.
 
@@ -134,6 +114,26 @@ class Filesystem(Operations):
         """
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
+
+    def write(self, path: str, data: str, offset: int, fh: int):
+        """Write to file.
+
+        Disabled.
+
+        Args:
+            path: path to file
+            data: data to write
+            length: number of bytes to read
+            offset: where to start in file
+
+        Raises:
+            IOError: will always raise this exception
+        """
+        raise IOError(
+            errno.EPERM,
+            os.strerror(errno.EPERM),
+            path
+        )
 
     def _attributes(self, path: str) -> dict:
         """Get attributes of file at path.
