@@ -23,6 +23,10 @@ class TestPhotographer(unittest.TestCase):
             self.datadir
         )
 
+    def tearDown(self):
+        """Tear down test."""
+        self.datadir.remove_data_dir()
+
     def does_url_checkout(self):
         """Test does checkut of url.
 
