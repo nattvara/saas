@@ -4,6 +4,7 @@ from saas.photographer.javascript import JavascriptSnippets
 from saas.photographer.photographer import Photographer
 from saas.storage.datadir import DataDirectory
 from saas.crawler.crawler import Crawler
+import saas.mount.filesystem as Filesystem
 import saas.storage.refresh as refresh
 import saas.utils.console as console
 from saas.storage.index import Index
@@ -29,7 +30,7 @@ def main():
 
         photographer = Photographer(
             index=Index(),
-            refresh_rate=refresh.EveryMinute,
+            refresh_rate=refresh.Hourly,
             datadir=DataDirectory(args.data_dir)
         )
 
@@ -38,6 +39,13 @@ def main():
 
         if args.component == 'photographer':
             photographer.start()
+
+        if args.component == 'mount':
+            Filesystem.mount(
+                args.mountpoint,
+                Index(DataDirectory(args.data_dir)),
+                refresh.Hourly
+            )
 
     except KeyboardInterrupt:
         console.p('')

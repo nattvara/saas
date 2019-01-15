@@ -195,6 +195,23 @@ class Url:
         )
 
 
+class UrlId(Url):
+    """Url id class.
+
+    The url id class is used when creating a photo and
+    it might not be neccessary to load all url properties
+    yet, but might be neccessary in the future.
+    """
+
+    def __init__(self, id: str):
+        """Create new url.
+
+        Args:
+            id: Url id (same as the hash of a real url)
+        """
+        self.id = id
+
+
 class InvalidUrlException(ValueError):
     """Invalid url exception."""
 

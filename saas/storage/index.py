@@ -1,12 +1,14 @@
 """Storage module."""
 
 from __future__ import annotations
-from saas.photographer.photo import Photo
+from saas.photographer.photo import Photo, PhotoPath, Screenshot
+from saas.storage.datadir import DataDirectory
+from saas.storage.refresh import RefreshRate
+from saas.mount.file import LastCapture
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
-from saas.storage.refresh import RefreshRate
 import saas.utils.console as console
-from saas.web.url import Url
+from saas.web.url import Url, UrlId
 import time
 
 
@@ -16,9 +18,14 @@ class Index:
     Wrapper around elasticsearch api
     """
 
-    def __init__(self):
-        """Create new index."""
+    def __init__(self, datadir: DataDirectory=None):
+        """Create new index.
+
+        Args:
+            datadir: Data directory (default: {None})
+        """
         self.es = Elasticsearch(max_retries=2, retry_on_timeout=True)
+        self.datadir = datadir
 
     def clear(self):
         """Clear all documents."""
@@ -36,7 +43,8 @@ class Index:
             'mappings': Mappings.crawled
         })
         self.es.indices.create('photos', body={
-            'mappings': Mappings.photos
+            'mappings': Mappings.photos,
+            'settings': Settings.photos,
         })
         console.p('done.')
 
@@ -270,18 +278,466 @@ class Index:
             doc_type='photo',
             id=photo.path.uuid,
             body={
-                'doc': {
-                    'url_id': photo.url.hash(),
-                    'refresh_rate': photo.refresh_rate.lock_format(),
-                    'captured_at': photo.refresh_rate().lock(),
-                    'filename': photo.filename(),
-                    'directory': photo.directory()
-                }
+                'url_id': photo.url.hash(),
+                'refresh_rate': photo.refresh_rate.lock_format(),
+                'captured_at': photo.refresh_rate().lock(),
+                'filesize': photo.filesize(),
+                'filename': photo.filename(),
+                'directory': photo.directory(),
+                'domain': photo.domain(),
+                'timestamp': int(time.time())
             }
         )
 
+    def photos_unique_domains(self, refresh_rate: RefreshRate) -> list:
+        """Get unique domains that pictures have been taken of.
 
-class Mappings():
+        Args:
+            refresh_rate: Given refresh rate photo was taken with
+        """
+        res = self.es.search(index='photos', size=0, body={
+            'query': {
+                'bool': {
+                    'must': {
+                        'term': {
+                            'refresh_rate': refresh_rate.lock_format(),
+                        }
+                    },
+                }
+            },
+            'aggs': {
+                'photos': {
+                    'terms': {
+                        'field': 'domain',
+                        'size': 10000
+                    }
+                }
+            }
+        })
+        unique = []
+        for bucket in res['aggregations']['photos']['buckets']:
+            unique.append(bucket['key'])
+        return unique
+
+    def photos_unique_captures_of_domain(
+        self,
+        domain: str,
+        refresh_rate: RefreshRate
+    ) -> list:
+        """Get unique captures for a domain.
+
+        Args:
+            domain: The given domain to check
+            refresh_rate: Given refresh rate photo was taken with
+        """
+        res = self.es.search(index='photos', size=0, body={
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'domain': domain,
+                            }
+                        },
+                        {
+                            'term': {
+                                'refresh_rate': refresh_rate.lock_format(),
+                            }
+                        },
+                    ],
+                }
+            },
+            'aggs': {
+                'photos': {
+                    'terms': {
+                        'field': 'captured_at',
+                        'size': 10000
+                    }
+                }
+            }
+        })
+        unique = []
+        for bucket in res['aggregations']['photos']['buckets']:
+            unique.append(bucket['key'])
+        return unique
+
+    def photos_most_recent_capture_of_domain(
+        self,
+        domain: str,
+        refresh_rate: RefreshRate
+    ) -> str:
+        """Get most recently captured_at value of domain.
+
+        Args:
+            domain: domain to check
+            refresh_rate: Given refresh rate photo was taken with
+
+        Returns:
+            The most recent capture_at value in photos index
+            str
+
+        Raises:
+            EmptySearchResultException: if no capture_at value was found
+        """
+        res = self.es.search(index='photos', size=1, body={
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'domain': domain
+                            }
+                        },
+                        {
+                            'term': {
+                                'refresh_rate': refresh_rate.lock_format()
+                            }
+                        }
+                    ]
+                }
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ]
+        })
+
+        if res['hits']['total'] == 0:
+            raise EmptySearchResultException(
+                f'no capture for given refresh rate and {domain} was found'
+            )
+
+        return res['hits']['hits'][0]['_source']['captured_at']
+
+    def photos_get_photo(
+        self,
+        domain: str,
+        captured_at: str,
+        full_filename: str,
+        refresh_rate: RefreshRate
+    ) -> Photo:
+        """Get photo from photos index.
+
+        Args:
+            domain: domain photo belongs to
+            captured_at: when photo was captured
+            full_filename: full filename of photo
+                eg. /some/path/some-filename.png
+            refresh_rate: Given refresh rate photo was taken with
+
+        Returns:
+            Requested photo metadata
+            Photo
+
+        Raises:
+            PhotoNotFoundException: If photo was not found
+        """
+        directory = '/'.join(full_filename.split('/')[:-1])
+        directory = directory.rstrip('/') + '/'
+        filename = full_filename.split('/')[-1:][0]
+
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
+
+        res = self.es.search(index='photos', size=1, body={
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'domain': domain
+                            }
+                        },
+                        {
+                            'term': {
+                                'refresh_rate': refresh_rate.lock_format()
+                            }
+                        },
+                        {
+                            'term': {
+                                'captured_at': captured_at
+                            }
+                        },
+                        {
+                            'term': {
+                                'directory': directory
+                            }
+                        },
+                        {
+                            'term': {
+                                'filename': filename
+                            }
+                        }
+                    ]
+                }
+            },
+        })
+
+        if res['hits']['total'] == 0:
+            raise PhotoNotFoundException('no photo was found')
+
+        res = res['hits']['hits'][0]
+        uuid = res['_id']
+        path = PhotoPath(self.datadir, uuid=uuid)
+
+        photo = Screenshot(
+            url=UrlId(res['_source']['url_id']),
+            path=path,
+            refresh_rate=refresh_rate,
+            index_filesize=res['_source']['filesize']
+        )
+
+        return photo
+
+    def photos_file_exists(
+        self,
+        domain: str,
+        captured_at: str,
+        full_filename: str,
+        refresh_rate: RefreshRate
+    ):
+        """Check if photo exists in photos index.
+
+        Args:
+            domain: domain photo belongs to
+            captured_at: when photo was captured
+            full_filename: full filename of photo
+                eg. /some/path/some-filename.png
+            refresh_rate: Given refresh rate photo was taken with
+
+        Returns:
+            False if file was not found, if found it's filesize
+            is returned
+            bool or int
+        """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
+        try:
+            photo = self.photos_get_photo(
+                domain,
+                captured_at,
+                full_filename,
+                refresh_rate
+            )
+            return photo.filesize()
+        except PhotoNotFoundException:
+            return False
+
+    def photos_directory_exists(
+        self,
+        domain: str,
+        captured_at: str,
+        directory: str,
+        refresh_rate: RefreshRate
+    ) -> bool:
+        """Check if directory exists in photos index.
+
+        Args:
+            domain: domain photo belongs to
+            captured_at: when photo was captured
+            directory: directory path eg. /some/path/to/dir/
+            refresh_rate: Given refresh rate photo was taken with
+
+        Returns:
+            True if photo was found, else False
+            bool
+        """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
+        res = self.es.search(index='photos', size=0, body={
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'domain': domain,
+                            }
+                        },
+                        {
+                            'term': {
+                                'refresh_rate': refresh_rate.lock_format(),
+                            }
+                        },
+                        {
+                            'term': {
+                                'captured_at': captured_at,
+                            }
+                        },
+                        {
+                            'wildcard': {
+                                'directory': directory + '*',
+                            }
+                        }
+                    ],
+                }
+            },
+            'aggs': {
+                'photos': {
+                    'terms': {
+                        'field': 'directory',
+                        'size': 10000
+                    }
+                }
+            }
+        })
+        for bucket in res['aggregations']['photos']['buckets']:
+            if directory in bucket['key']:
+                return True
+        return False
+
+    def photos_list_files_in_directory(
+        self,
+        domain: str,
+        captured_at: str,
+        directory: str,
+        refresh_rate: RefreshRate
+    ) -> list:
+        """List photos in a directory.
+
+        Args:
+            domain: domain photos should belong to
+            captured_at: when photos should have been captured
+            directory: directory files should be located in
+            refresh_rate: Given refresh rate photo was taken with
+
+        Returns:
+            A list of files
+            list
+        """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
+        res = self.es.search(index='photos', size=10000, body={
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'domain': domain
+                            }
+                        },
+                        {
+                            'term': {
+                                'refresh_rate': refresh_rate.lock_format()
+                            }
+                        },
+                        {
+                            'term': {
+                                'captured_at': captured_at
+                            }
+                        },
+                        {
+                            'term': {
+                                'directory': directory
+                            }
+                        }
+                    ]
+                }
+            }
+        })
+        files = []
+        for doc in res['hits']['hits']:
+            files.append(doc['_source']['filename'])
+        return files
+
+    def photos_list_directories_in_directory(
+        self,
+        domain: str,
+        captured_at: str,
+        directory: str,
+        refresh_rate: RefreshRate
+    ) -> list:
+        """List directories in a directory.
+
+        Args:
+            domain: domain directory should belong to
+            captured_at: when directory should have been captured
+            directory: directory should be located in
+            refresh_rate: given refresh rate photo was taken with
+
+        Returns:
+            A list of directories
+            list
+        """
+        captured_at = LastCapture.translate(
+            captured_at,
+            domain,
+            self,
+            refresh_rate
+        )
+        res = self.es.search(index='photos', size=0, body={
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'domain': domain,
+                            }
+                        },
+                        {
+                            'term': {
+                                'refresh_rate': refresh_rate.lock_format(),
+                            }
+                        },
+                        {
+                            'term': {
+                                'captured_at': captured_at,
+                            }
+                        },
+                        {
+                            'wildcard': {
+                                'directory': directory + '*',
+                            }
+                        }
+                    ],
+                }
+            },
+            'aggs': {
+                'photos': {
+                    'terms': {
+                        'field': 'directory',
+                        'size': 10000
+                    }
+                }
+            }
+        })
+        directories = []
+        for bucket in res['aggregations']['photos']['buckets']:
+            # trim the parent directories from the path,
+            # and strip it's child directories
+            path = bucket['key']
+            path = path.replace(directory, '', 1)
+            path = path.split('/')[0]
+            if path not in directories and path != '':
+                directories.append(path)
+        return directories
+
+
+class PhotoNotFoundException(Exception):
+    """Photo was not found exception."""
+
+    pass
+
+
+class Mappings:
     """Mappings for elasticsearch indices."""
 
     uncrawled = {
@@ -343,13 +799,53 @@ class Mappings():
                     'type': 'text'
                 },
                 'captured_at': {
-                    'type': 'text'
+                    'type': 'text',
+                    'fielddata': True
+                },
+                'filesize': {
+                    'type': 'integer',
                 },
                 'filename': {
-                    'type': 'text'
+                    'type': 'text',
+                    'analyzer': 'analyzer_filename',
                 },
                 'directory': {
-                    'type': 'text'
+                    'type': 'text',
+                    'analyzer': 'analyzer_directory',
+                    'fielddata': True
+                },
+                'domain': {
+                    'type': 'text',
+                    'analyzer': 'analyzer_domain',
+                    'fielddata': True
+                },
+                'timestamp': {
+                    'type': 'date',
+                    'format': 'epoch_second',
+                }
+            }
+        }
+    }
+
+
+class Settings:
+    """Settings for elasticsearch indices."""
+
+    photos = {
+        'index': {
+            'analysis': {
+                'analyzer': {
+                    'analyzer_domain': {
+                        'tokenizer': 'whitespace',
+                        'filter': 'lowercase'
+                    },
+                    'analyzer_directory': {
+                        'tokenizer': 'path_hierarchy'
+                    },
+                    'analyzer_filename': {
+                        'tokenizer': 'whitespace',
+                        'filter': 'lowercase'
+                    }
                 }
             }
         }
