@@ -21,10 +21,10 @@ class TestFilesystem(unittest.TestCase):
     def setUp(self):
         """Set up test."""
         self.console = console
-        self.index = Index()
         self.refresh_rate = refresh.Hourly
-        self.filesystem = Filesystem(self.index, self.refresh_rate)
         self.datadir = DataDirectory(dirname(__file__) + '/datadir')
+        self.index = Index(self.datadir, MagicMock())
+        self.filesystem = Filesystem(self.index, self.refresh_rate)
 
     def tearDown(self):
         """Tear down test."""
@@ -141,12 +141,18 @@ class TestFilesystem(unittest.TestCase):
         """Test filesystem can get attributes of directory."""
         time.time = MagicMock(return_value=time.time())
         self.index.photos_directory_exists = MagicMock(return_value=True)
+        self.index.photos_unique_domains = MagicMock(
+            return_value=['example.com']
+        )
+        self.index.photos_unique_captures_of_domain = MagicMock(
+            return_value=['2019-01-13H20:00']
+        )
 
         expected = {
             'st_atime': time.time(),
             'st_ctime': time.time(),
             'st_gid': os.getgid(),
-            'st_mode': Directory.ST_MODE,
+            'st_mode': Directory('').ST_MODE,
             'st_mtime': time.time(),
             'st_size': 0,
             'st_uid': os.getuid(),
@@ -187,7 +193,7 @@ class TestFilesystem(unittest.TestCase):
             'st_atime': time.time(),
             'st_ctime': time.time(),
             'st_gid': os.getgid(),
-            'st_mode': File.ST_MODE,
+            'st_mode': File('').ST_MODE,
             'st_mtime': time.time(),
             'st_size': 123000,
             'st_uid': os.getuid(),

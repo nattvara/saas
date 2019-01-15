@@ -18,7 +18,7 @@ class TestIndex(unittest.TestCase):
     def setUp(self):
         """Set up test."""
         self.datadir = DataDirectory(dirname(__file__) + '/datadir')
-        self.index = Index(self.datadir)
+        self.index = Index(self.datadir, MagicMock())
 
     def tearDown(self):
         """Tear down test."""
