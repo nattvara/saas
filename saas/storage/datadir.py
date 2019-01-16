@@ -3,6 +3,7 @@
 from __future__ import annotations
 import saas.photographer.photo as PhotoPath
 from saas.utils.files import create_dir
+import saas.utils.console as console
 import shutil
 import os
 
@@ -22,6 +23,12 @@ class DataDirectory:
     def remove_data_dir(self):
         """Remove data directory root."""
         shutil.rmtree(self.root)
+
+    def clear(self):
+        """Clear data directory."""
+        console.p(f'clearing data directory at: {self.root}')
+        shutil.rmtree(self.root)
+        create_dir(self.root)
 
     def path_for_photo(self, photo_path: PhotoPath.PhotoPath) -> str:
         """Get path for photo in data directory.
