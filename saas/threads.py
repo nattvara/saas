@@ -9,6 +9,7 @@ from saas.utils.files import real_path
 import saas.storage.refresh as refresh
 import saas.utils.console as console
 from saas.storage.index import Index
+import saas.utils.stats as stats
 from threading import Thread
 import signal
 import time
@@ -55,6 +56,11 @@ class Controller:
                 'running': True
             }
             amount -= 1
+
+    def start_stats():
+        """Start stats thread."""
+        thread = Thread(target=_stats_thread, args=())
+        thread.start()
 
     def start_photographers(
         amount: int,
@@ -182,6 +188,48 @@ def _crawler_thread(
         console.p(f'error occured in crawler thread {thread_id}: {e}')
     finally:
         Controller.threads[thread_id]['running'] = False
+
+
+def _stats_thread():
+    """Stats thread.
+
+    Prints system and saas statistics every 5th minute
+    """
+    start = time.time()
+    last_print = 1
+    while Controller.SHOULD_RUN:
+
+        time.sleep(1)
+        mins = int(int(time.time() - start) / 60)
+        if mins % 5 != 0 or mins <= last_print:
+            continue
+
+        index = Index()
+        last_print = mins
+
+        t = '[throughput]           5m: {}, 15m: {}, 30min: {}, 1h: {}'.format(
+            stats.throughput(index, 5),
+            stats.throughput(index, 15),
+            stats.throughput(index, 30),
+            stats.throughput(index, 60),
+        )
+        ta = '{}  5m: {}, 15m: {}, 30min: {}, 1h: {}'.format(
+            '[throughput 1min avg]',
+            round(stats.throughput(index, 5) / 5, 2) if mins > 4 else 'n/a',
+            round(stats.throughput(index, 15) / 15, 2) if mins > 14 else 'n/a',
+            round(stats.throughput(index, 30) / 30, 2) if mins > 29 else 'n/a',
+            round(stats.throughput(index, 60) / 60, 2) if mins > 59 else 'n/a',
+        )
+        load = '[load avg]             1m: {}, 5m: {}, 15min: {}'.format(
+            stats.load_avg(1),
+            stats.load_avg(5),
+            stats.load_avg(15),
+        )
+        cpu = f'[current cpu usage]    {stats.cpu_usage(10)}%'
+        mem = f'[memory usage]         {stats.memory_usage(10)}%'
+
+        for msg in [t, ta, load, cpu, mem]:
+            console.p(msg)
 
 
 def _photographer_thread(

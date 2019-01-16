@@ -40,6 +40,8 @@ def main():
         ):
             sys.exit()
 
+        Controller.start_stats()
+
         Controller.start_crawlers(
             amount=args.crawler_threads,
             url_file=args.url_file,
