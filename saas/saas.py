@@ -1,15 +1,14 @@
 """saas entry point."""
 
 from saas.photographer.javascript import JavascriptSnippets
-from saas.photographer.photographer import Photographer
 from saas.storage.datadir import DataDirectory
-from saas.crawler.crawler import Crawler
-import saas.mount.filesystem as Filesystem
 import saas.storage.refresh as refresh
 import saas.utils.console as console
 from saas.storage.index import Index
 import saas.utils.args as arguments
+from saas.threads import Controller
 import sys
+import time
 
 
 def main():
@@ -21,37 +20,45 @@ def main():
 
         JavascriptSnippets.load()
 
-        crawler = Crawler(
+        index = Index()
+        datadir = DataDirectory(args.data_dir)
+
+        if args.setup_elasticsearch:
+            index.create_indices()
+
+        if args.clear_elasticsearch:
+            index.clear()
+            index.create_indices()
+
+        if args.clear_data_dir:
+            datadir.clear()
+
+        if not Controller.start_filesystem(
+            mountpoint=args.mountpoint,
+            datadir=datadir,
+            refresh_rate=refresh.Hourly
+        ):
+            sys.exit()
+
+        Controller.start_crawlers(
+            amount=args.crawler_threads,
             url_file=args.url_file,
-            index=Index(),
-            clear_elasticsearch=args.clear_elasticsearch,
             ignore_found_urls=args.ignore_found_urls,
         )
 
-        photographer = Photographer(
-            index=Index(),
+        Controller.start_photographers(
+            amount=args.photographer_threads,
             refresh_rate=refresh.Hourly,
             datadir=DataDirectory(args.data_dir)
         )
 
-        if args.component == 'crawler':
-            crawler.start()
-
-        if args.component == 'photographer':
-            photographer.start()
-
-        if args.component == 'mount':
-            Filesystem.mount(
-                args.mountpoint,
-                Index(DataDirectory(args.data_dir)),
-                refresh.Hourly
-            )
+        while True:
+            time.sleep(10)
 
     except KeyboardInterrupt:
+        console.p(' terminating.')
+        Controller.stop_all()
         console.p('')
-        console.p('terminating.')
-        crawler.stop()
-        sys.exit()
 
 
 if __name__ == '__main__':
