@@ -44,7 +44,7 @@ def main():
 
         Controller.start_crawlers(
             amount=args.crawler_threads,
-            url_file=args.url_file,
+            url_file=args.url_file.name,
             ignore_found_urls=args.ignore_found_urls,
         )
 

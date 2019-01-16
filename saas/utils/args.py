@@ -13,7 +13,7 @@ def get_argument_parser():
 
     parser.add_argument(
         'url_file',
-        type=str,
+        type=argparse.FileType('w'),
         default=None,
         help='Path to input url file',
     )
