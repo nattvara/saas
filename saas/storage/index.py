@@ -4,6 +4,7 @@ from __future__ import annotations
 from saas.photographer.photo import Photo, PhotoPath, Screenshot
 from saas.storage.datadir import DataDirectory
 from saas.storage.refresh import RefreshRate
+from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import saas.utils.console as console
@@ -57,6 +58,34 @@ class Index:
             'settings': Settings.photos,
         })
         console.p('done.')
+
+    def calculate_throughput(self, timeframe: int) -> int:
+        """Calculate throughput.
+
+        Number of photos stored in index during timeframe
+
+        Args:
+            timeframe: timeframe in minutes
+
+        Returns:
+            number of photos stored in index during timeframe
+            int
+        """
+        now = datetime.now()
+        start = int((now - timedelta(minutes=timeframe)).timestamp())
+        end = now.timestamp()
+
+        res = self.es.search(index='photos', size=0, body={
+            'query': {
+                'range': {
+                    'timestamp': {
+                        'gte': start,
+                        'lte': end,
+                    },
+                }
+            }
+        })
+        return res['hits']['total']
 
     def add_crawled_url(self, url: Url):
         """Add crawled url.
