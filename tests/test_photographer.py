@@ -34,6 +34,7 @@ class TestPhotographer(unittest.TestCase):
         """
         url = Url.from_string('https://example.com')
         self.index.recently_crawled_url = MagicMock(return_value=url)
+        self.index.crawled_urls_count = MagicMock(return_value=1)
         self.index.lock_crawled_url = MagicMock()
 
     def test_photographer_can_checkout_url_from_crawled_index(self):
