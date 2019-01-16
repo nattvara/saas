@@ -10,6 +10,7 @@ import saas.utils.console as console
 from saas.web.url import Url, UrlId
 import saas.mount.file as file
 import time
+import random
 
 
 class Index:
@@ -191,8 +192,11 @@ class Index:
 
         return res['hits']['hits'][0]
 
-    def most_recent_crawled_url(self, refresh_rate=RefreshRate):
-        """Get most the url that was most recently crawled.
+    def recently_crawled_url(self, refresh_rate=RefreshRate):
+        """Get recently crawled url.
+
+        Picks from the last 5 crawled to prevent two running
+        photograpers to fetch the same one.
 
         Args:
             refresh_rate: the refresh reate to search for and
@@ -205,7 +209,7 @@ class Index:
         Raises:
             EmptySearchResultException: if no url was found
         """
-        res = self.es.search(index='crawled', size=1, body={
+        res = self.es.search(index='crawled', size=5, body={
             'query': {
                 'bool': {
                     'must': {
@@ -234,7 +238,48 @@ class Index:
         if res['hits']['total'] == 0:
             raise EmptySearchResultException('no crawled url was found')
 
-        return Url.from_string(res['hits']['hits'][0]['_source']['url'])
+        hits = res['hits']['hits']
+
+        return Url.from_string(random.choice(hits)['_source']['url'])
+
+    def crawled_urls_count(self, refresh_rate=RefreshRate) -> int:
+        """Crawled url count.
+
+        Args:
+            refresh_rate: the refresh reate to search for and
+                use to avoid locked urls
+
+        Returns:
+            number of crawled urls with status code 200
+            int
+        """
+        res = self.es.search(index='crawled', size=0, body={
+            'query': {
+                'bool': {
+                    'must': {
+                        'term': {
+                            'status_code': 200,
+                        }
+                    },
+                    'must_not': [
+                        {
+                            'term': {
+                                'lock_value': refresh_rate().lock(),
+                            }
+                        }
+                    ]
+                }
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ]
+        })
+
+        return res['hits']['total']
 
     def remove_uncrawled_url(self, id: str):
         """Remove url from uncrawled index.
@@ -266,12 +311,18 @@ class Index:
             url: Url to lock
             refresh_rate: Refresh rate to use (Hourly, Daily, etc.)
         """
-        self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
-            'doc': {
-                'lock_format': refresh_rate.lock_format(),
-                'lock_value': refresh_rate().lock(),
+        self.es.update(
+            index='crawled',
+            doc_type='url',
+            id=url.hash(),
+            retry_on_conflict=3,
+            body={
+                'doc': {
+                    'lock_format': refresh_rate.lock_format(),
+                    'lock_value': refresh_rate().lock(),
+                }
             }
-        })
+        )
 
     def save_photo(self, photo: Photo):
         """Save photo in index.
