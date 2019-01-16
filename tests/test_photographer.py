@@ -23,13 +23,17 @@ class TestPhotographer(unittest.TestCase):
             self.datadir
         )
 
+    def tearDown(self):
+        """Tear down test."""
+        self.datadir.remove_data_dir()
+
     def does_url_checkout(self):
         """Test does checkut of url.
 
         Add mock to affected index methods.
         """
         url = Url.from_string('https://example.com')
-        self.index.most_recent_crawled_url = MagicMock(return_value=url)
+        self.index.recently_crawled_url = MagicMock(return_value=url)
         self.index.lock_crawled_url = MagicMock()
 
     def test_photographer_can_checkout_url_from_crawled_index(self):

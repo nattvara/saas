@@ -4,12 +4,13 @@ from __future__ import annotations
 from saas.photographer.photo import Photo, PhotoPath, Screenshot
 from saas.storage.datadir import DataDirectory
 from saas.storage.refresh import RefreshRate
-from saas.mount.file import LastCapture
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import saas.utils.console as console
 from saas.web.url import Url, UrlId
+import saas.mount.file as file
 import time
+import random
 
 
 class Index:
@@ -18,14 +19,23 @@ class Index:
     Wrapper around elasticsearch api
     """
 
-    def __init__(self, datadir: DataDirectory=None):
+    def __init__(
+        self,
+        datadir: DataDirectory=None,
+        es_client: Elasticsearch=None
+    ):
         """Create new index.
 
         Args:
             datadir: Data directory (default: {None})
+            es_client: Elasticsearch client,
+                useful in testing (default: {None})
         """
-        self.es = Elasticsearch(max_retries=2, retry_on_timeout=True)
         self.datadir = datadir
+        if es_client is not None:
+            self.es = es_client
+        else:
+            self.es = Elasticsearch(max_retries=2, retry_on_timeout=True)
 
     def clear(self):
         """Clear all documents."""
@@ -182,8 +192,11 @@ class Index:
 
         return res['hits']['hits'][0]
 
-    def most_recent_crawled_url(self, refresh_rate=RefreshRate):
-        """Get most the url that was most recently crawled.
+    def recently_crawled_url(self, refresh_rate=RefreshRate):
+        """Get recently crawled url.
+
+        Picks from the last 5 crawled to prevent two running
+        photograpers to fetch the same one.
 
         Args:
             refresh_rate: the refresh reate to search for and
@@ -196,7 +209,7 @@ class Index:
         Raises:
             EmptySearchResultException: if no url was found
         """
-        res = self.es.search(index='crawled', size=1, body={
+        res = self.es.search(index='crawled', size=5, body={
             'query': {
                 'bool': {
                     'must': {
@@ -225,7 +238,48 @@ class Index:
         if res['hits']['total'] == 0:
             raise EmptySearchResultException('no crawled url was found')
 
-        return Url.from_string(res['hits']['hits'][0]['_source']['url'])
+        hits = res['hits']['hits']
+
+        return Url.from_string(random.choice(hits)['_source']['url'])
+
+    def crawled_urls_count(self, refresh_rate=RefreshRate) -> int:
+        """Crawled url count.
+
+        Args:
+            refresh_rate: the refresh reate to search for and
+                use to avoid locked urls
+
+        Returns:
+            number of crawled urls with status code 200
+            int
+        """
+        res = self.es.search(index='crawled', size=0, body={
+            'query': {
+                'bool': {
+                    'must': {
+                        'term': {
+                            'status_code': 200,
+                        }
+                    },
+                    'must_not': [
+                        {
+                            'term': {
+                                'lock_value': refresh_rate().lock(),
+                            }
+                        }
+                    ]
+                }
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ]
+        })
+
+        return res['hits']['total']
 
     def remove_uncrawled_url(self, id: str):
         """Remove url from uncrawled index.
@@ -257,12 +311,18 @@ class Index:
             url: Url to lock
             refresh_rate: Refresh rate to use (Hourly, Daily, etc.)
         """
-        self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
-            'doc': {
-                'lock_format': refresh_rate.lock_format(),
-                'lock_value': refresh_rate().lock(),
+        self.es.update(
+            index='crawled',
+            doc_type='url',
+            id=url.hash(),
+            retry_on_conflict=3,
+            body={
+                'doc': {
+                    'lock_format': refresh_rate.lock_format(),
+                    'lock_value': refresh_rate().lock(),
+                }
             }
-        })
+        )
 
     def save_photo(self, photo: Photo):
         """Save photo in index.
@@ -439,7 +499,7 @@ class Index:
         directory = directory.rstrip('/') + '/'
         filename = full_filename.split('/')[-1:][0]
 
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -517,7 +577,7 @@ class Index:
             is returned
             bool or int
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -553,7 +613,7 @@ class Index:
             True if photo was found, else False
             bool
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -619,7 +679,7 @@ class Index:
             A list of files
             list
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,
@@ -677,7 +737,7 @@ class Index:
             A list of directories
             list
         """
-        captured_at = LastCapture.translate(
+        captured_at = file.LastCapture.translate(
             captured_at,
             domain,
             self,

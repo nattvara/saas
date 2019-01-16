@@ -18,7 +18,7 @@ class TestIndex(unittest.TestCase):
     def setUp(self):
         """Set up test."""
         self.datadir = DataDirectory(dirname(__file__) + '/datadir')
-        self.index = Index(self.datadir)
+        self.index = Index(self.datadir, MagicMock())
 
     def tearDown(self):
         """Tear down test."""
@@ -56,8 +56,8 @@ class TestIndex(unittest.TestCase):
             }
         })
 
-    def test_most_recent_crawled_url_can_be_fetched(self):
-        """Test most recent crawled url can be fetched."""
+    def test_recently_crawled_url_can_be_fetched(self):
+        """Test recently crawled url can be fetched."""
         self.search_returns_doc({
             '_id': 'xxx...',
             '_source': {
@@ -66,12 +66,12 @@ class TestIndex(unittest.TestCase):
             }
         })
 
-        url = self.index.most_recent_crawled_url(refresh.Hourly)
+        url = self.index.recently_crawled_url(refresh.Hourly)
         self.assertIsInstance(cls=Url, obj=url)
         self.assertEqual('http://example.com', url.to_string())
         self.index.es.search.assert_called_with(
             index='crawled',
-            size=1,
+            size=5,
             body={
                 'query': {
                     'bool': {
@@ -109,6 +109,7 @@ class TestIndex(unittest.TestCase):
             index='crawled',
             doc_type='url',
             id=url.hash(),
+            retry_on_conflict=3,
             body={
                 'doc': {
                     'lock_format': refresh.Hourly.lock_format(),

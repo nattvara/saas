@@ -4,11 +4,13 @@ from __future__ import annotations
 from saas.photographer.photo import PhotoPath, LoadingPhoto
 from saas.storage.index import EmptySearchResultException
 from saas.storage.datadir import DataDirectory
-from saas.photographer.camera import Camera
 import saas.storage.refresh as refresh
+import saas.photographer.camera as c
 import saas.utils.console as console
 from saas.storage.index import Index
+import saas.threads as threads
 from saas.web.url import Url
+import random
 import time
 
 
@@ -35,32 +37,39 @@ class Photographer:
         self.refresh_rate = refresh_rate
         self.datadir = datadir
 
-    def start(self):
-        """Start photographer."""
-        while True:
-            console.p('.', end='')
-            try:
-                url = self._checkout_url()
-                console.pp(url.to_string())
+    def tick(self):
+        """Tick.
 
-                path = PhotoPath(self.datadir)
-                photo = LoadingPhoto(
-                    url=url,
-                    path=path,
-                    refresh_rate=self.refresh_rate
-                )
-                photo.save_loading_text()
-                self.index.save_photo(photo)
+        Checkout a url from index, take photo of url,
+        save to datadir and update index with photo
+        metadata
+        """
+        try:
+            timer = time.time()
+            url = self._checkout_url()
 
-                self.index.save_photo(photo)
-                camera = Camera()
-                photo = camera.take_picture(url, path, self.refresh_rate)
-                self.index.save_photo(photo)
+            path = PhotoPath(self.datadir)
+            photo = LoadingPhoto(
+                url=url,
+                path=path,
+                refresh_rate=self.refresh_rate
+            )
+            photo.save_loading_text()
+            self.index.save_photo(photo)
 
-            except EmptySearchResultException as e:
-                pass
-            finally:
-                time.sleep(1)
+            camera = c.Camera()
+            photo = camera.take_picture(url, path, self.refresh_rate)
+            self.index.save_photo(photo)
+
+            timer = int(time.time() - timer)
+            console.p(
+                f'photo was taken of {url.to_string()} took: {timer}s'
+            )
+
+        except EmptySearchResultException as e:
+            pass
+        finally:
+            time.sleep(1)
 
     def _checkout_url(self) -> Url:
         """Checkout url.
@@ -73,6 +82,13 @@ class Photographer:
             A url ready to take a picture of
             Url
         """
-        url = self.index.most_recent_crawled_url(self.refresh_rate)
+        crawled_urls = self.index.crawled_urls_count(self.refresh_rate)
+        processes = threads.Controller.PHOTOGRAPHER_PROCESSES
+        if crawled_urls < processes and processes > 1:
+            # to prevent checkout of same url when number of urls
+            # to take photographs of are small
+            time.sleep(round(random.uniform(10, 0), 2))
+
+        url = self.index.recently_crawled_url(self.refresh_rate)
         self.index.lock_crawled_url(url, self.refresh_rate)
         return url

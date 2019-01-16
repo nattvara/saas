@@ -26,6 +26,27 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--crawler-threads',
+        type=int,
+        default=1,
+        help='''
+            Number of crawler threads, usually not
+            neccessary with more than one
+        '''.replace('  ', ''),
+    )
+
+    parser.add_argument(
+        '--photographer-threads',
+        type=int,
+        default=3,
+        help='''
+            Number of photographer threads, beaware that
+            increasing too much won't neccessarily speed up
+            performance and hog the system
+        '''.replace('  ', ''),
+    )
+
+    parser.add_argument(
         '--data-dir',
         type=str,
         default='~/.saas-data-dir',
@@ -33,10 +54,28 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--clear-data-dir',
+        action='store_true',
+        default=False,
+        help='Use flag to clear data directory on start',
+    )
+
+    parser.add_argument(
+        '--setup-elasticsearch',
+        action='store_true',
+        default=False,
+        help='Use flag to create indices in elasticsearch',
+    )
+
+    parser.add_argument(
         '--clear-elasticsearch',
         action='store_true',
         default=False,
-        help='Use flag to clear elasticsearch on start',
+        help='''
+            Use flag to clear elasticsearch on start,
+            WARNING: this will clear all indices found
+            in elasticsearch instance
+        '''.replace('  ', ''),
     )
 
     parser.add_argument(
@@ -44,14 +83,6 @@ def get_argument_parser():
         action='store_true',
         default=False,
         help='Use flag to ignore urls found on crawled urls',
-    )
-
-    parser.add_argument(
-        '--component',
-        type=str,
-        nargs='?',
-        default=None,
-        help='''Used during development to run a specific component''',
     )
 
     return parser

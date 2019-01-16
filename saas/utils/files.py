@@ -40,5 +40,4 @@ def real_path(path: str) -> str:
         root = '/'
     else:
         root = os.getcwd()
-        path = path[1:]
     return f'{root}/{path}'.replace('//', '/').replace('//', '/')

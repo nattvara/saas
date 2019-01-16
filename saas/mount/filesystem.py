@@ -19,7 +19,7 @@ def mount(mountpoint: str, index: Index, refresh_rate: RefreshRate):
         mountpoint: where to mount filesystem
         index: index to read data from
         refresh_rate: Which refresh rate filesystem should use
-                for fetching photos
+            for fetching photos
     """
     filesystem = Filesystem(index, refresh_rate)
     FUSE(filesystem, real_path(mountpoint), nothreads=True, foreground=True)
