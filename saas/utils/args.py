@@ -38,7 +38,7 @@ def get_argument_parser():
     parser.add_argument(
         '--photographer-threads',
         type=int,
-        default=3,
+        default=2,
         help='''
             Number of photographer threads, beaware that
             increasing too much won't neccessarily speed up
