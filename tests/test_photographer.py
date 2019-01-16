@@ -33,7 +33,7 @@ class TestPhotographer(unittest.TestCase):
         Add mock to affected index methods.
         """
         url = Url.from_string('https://example.com')
-        self.index.most_recent_crawled_url = MagicMock(return_value=url)
+        self.index.recently_crawled_url = MagicMock(return_value=url)
         self.index.lock_crawled_url = MagicMock()
 
     def test_photographer_can_checkout_url_from_crawled_index(self):
