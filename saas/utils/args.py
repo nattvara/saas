@@ -8,49 +8,52 @@ def get_argument_parser():
     parser = argparse.ArgumentParser(
         prog='saas',
         description='Screenshot as a service',
-        formatter_class=argparse.RawTextHelpFormatter,
+        formatter_class=argparse.HelpFormatter,
     )
 
     parser.add_argument(
         'url_file',
         type=str,
         default=None,
-        help='''Path to input url file''',
+        help='Path to input url file',
     )
 
     parser.add_argument(
         'mountpoint',
         type=str,
         default=None,
-        help='''Where to mount filesystem via FUSE''',
+        help='Where to mount filesystem via FUSE',
     )
 
     parser.add_argument(
         '--crawler-threads',
+        metavar='',
         type=int,
         default=1,
         help='''
             Number of crawler threads, usually not
-            neccessary with more than one
-        '''.replace('  ', ''),
+            neccessary with more than one (default: %(default)s)
+        ''',
     )
 
     parser.add_argument(
         '--photographer-threads',
+        metavar='',
         type=int,
         default=2,
         help='''
             Number of photographer threads, beaware that
             increasing too much won't neccessarily speed up
-            performance and hog the system
-        '''.replace('  ', ''),
+            performance and hog the system (default: %(default)s)
+        '''
     )
 
     parser.add_argument(
         '--data-dir',
+        metavar='',
         type=str,
         default='~/.saas-data-dir',
-        help='''Path data directory''',
+        help='Path to data directory (default: %(default)s)'
     )
 
     parser.add_argument(
@@ -75,7 +78,7 @@ def get_argument_parser():
             Use flag to clear elasticsearch on start,
             WARNING: this will clear all indices found
             in elasticsearch instance
-        '''.replace('  ', ''),
+        ''',
     )
 
     parser.add_argument(
