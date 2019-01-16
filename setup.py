@@ -16,6 +16,7 @@ setup(
         'elasticsearch',
         'selenium',
         'fusepy',
+        'psutil==4.3.0',
     ],
     entry_points={
         'console_scripts': [
