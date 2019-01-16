@@ -1,7 +1,6 @@
 """Crawler module."""
 
 from __future__ import annotations
-import saas.utils.console as console
 from saas.web.browser import Browser
 from saas.storage.index import Index
 from saas.web.url import Url
@@ -20,7 +19,6 @@ class Crawler:
         self,
         url_file: str,
         index: Index,
-        clear_elasticsearch: bool=False,
         ignore_found_urls: bool=False
     ):
         """Create crawler.
@@ -28,14 +26,12 @@ class Crawler:
         Args:
             url_file: path to url file
             index: Index storage for queued urls
-            clear_elasticsearch: elasticsearch cluster should clearedon start
             ignore_found_urls: if crawler should ignore new urls found on
                 pages it crawls
         """
         self.source_is_open = False
         self.source_path = ''
         self._open_source('r', url_file)
-        self.clear_elasticsearch = clear_elasticsearch
         self.ignore_found_urls = ignore_found_urls
         self.index = index
 
@@ -88,39 +84,34 @@ class Crawler:
             root = os.getcwd()
         return f'{root}/{url_file}'.replace('//', '/').replace('//', '/')
 
-    def start(self):
-        """Start crawler."""
-        if self.clear_elasticsearch:
-            self.index.clear()
-            self.index.create_indices()
+    def tick(self):
+        """Tick.
 
-        while True:
-            console.p('.', end='')
-            url = self._next_url()
+        Check if there are any uncrawled urls, if none exists
+        then sleep for a second, otherwise crawl url.
+        """
+        url = self._next_url()
 
-            if not url:
-                time.sleep(1)
-                continue
+        if not url:
+            time.sleep(1)
+            return
 
-            console.eol()
+        if url is not None:
+            self.index.add_crawled_url(url)
 
-            if url is not None:
-                console.p(url.to_string(), end='')
-                self.index.add_crawled_url(url)
+            page = Browser.get_page(url)
+            self.index.set_status_code_for_crawled_url(
+                url,
+                page.status_code
+            )
 
-                page = Browser.get_page(url)
-                self.index.set_status_code_for_crawled_url(
-                    url,
-                    page.status_code
-                )
+            if self.ignore_found_urls:
+                return
 
-                if self.ignore_found_urls:
-                    continue
+            if page.status_code != 200:
+                return
 
-                if page.status_code != 200:
-                    continue
-
-                self.index.add_uncrawled_urls(page.urls)
+            self.index.add_uncrawled_urls(page.urls)
 
     def _next_url(self):
         """Get next url to crawl.
