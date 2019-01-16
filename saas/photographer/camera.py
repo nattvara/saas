@@ -1,10 +1,13 @@
 """Camera module."""
 
 from __future__ import annotations
+from urllib3.exceptions import ProtocolError, MaxRetryError
 from saas.photographer.javascript import JavascriptSnippets
 from saas.photographer.photo import PhotoPath, Screenshot
 from saas.storage.refresh import RefreshRate
+from http.client import RemoteDisconnected
 from selenium import webdriver
+import saas.threads as threads
 from saas.web.url import Url
 import time
 import os
@@ -40,28 +43,43 @@ class Camera:
             Screenshot
         """
         os.environ['MOZ_HEADLESS'] = '1'
-        profile = self._create_webdriver_profile()
-        self.webdriver = self._create_webdriver(profile, UserAgents.GOOGLEBOT)
-        self._route(url)
-        self._set_resolution(1920, 1080)
-        self._start_images_monitor()
+        try:
+            profile = self._create_webdriver_profile()
+            self.webdriver = self._create_webdriver(
+                profile,
+                UserAgents.GOOGLEBOT
+            )
+            threads.Controller.webdrivers.append(
+                self.webdriver.service.process.pid
+            )
+            self._route(url)
+            self._set_resolution(1920, 1080)
+            self._start_images_monitor()
 
-        # scroll down the page to trigger load of images
-        steps = 2 * int(self._document_height() / self.height)
-        for i in range(1, steps):
-            self._scroll_y_axis((self.height / 2) * i)
+            # scroll down the page to trigger load of images
+            steps = 2 * int(self._document_height() / self.height)
+            for i in range(1, steps):
+                self._scroll_y_axis((self.height / 2) * i)
+                self._wait_for_images_to_load()
+
+            # resize the viewport and make sure that it's scrolled
+            # all the way to the top
+            self._scroll_y_axis(0)
+            self._set_resolution(1920, self._document_height())
             self._wait_for_images_to_load()
+            self._scroll_y_axis(-500)
+            self._wait_for_resize()
 
-        # resize the viewport and make sure that it's scrolled
-        # all the way to the top
-        self._scroll_y_axis(0)
-        self._set_resolution(1920, self._document_height())
-        self._wait_for_images_to_load()
-        self._scroll_y_axis(-500)
-        self._wait_for_resize()
-
-        self._save(path)
-        self.webdriver.quit()
+            self._save(path)
+        except RemoteDisconnected:
+            pass
+        except ProtocolError:
+            pass
+        except MaxRetryError:
+            pass
+        finally:
+            if self.webdriver:
+                self.webdriver.quit()
 
         return Screenshot(
             url=url,
