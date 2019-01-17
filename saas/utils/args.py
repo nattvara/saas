@@ -59,7 +59,7 @@ def get_argument_parser():
         '--photographer-threads',
         metavar='',
         type=int,
-        default=2,
+        default=1,
         help='''
             Number of photographer threads, beaware that
             increasing too much won't neccessarily speed up
