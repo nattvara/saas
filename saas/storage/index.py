@@ -4,14 +4,16 @@ from __future__ import annotations
 from saas.photographer.photo import Photo, PhotoPath, Screenshot
 from saas.storage.datadir import DataDirectory
 from saas.storage.refresh import RefreshRate
+from urllib.error import HTTPError, URLError
 from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import saas.utils.console as console
 from saas.web.url import Url, UrlId
 import saas.mount.file as file
-import time
+import urllib.request
 import random
+import time
 
 
 class Index:
@@ -23,7 +25,8 @@ class Index:
     def __init__(
         self,
         datadir: DataDirectory=None,
-        es_client: Elasticsearch=None
+        es_client: Elasticsearch=None,
+        host: str='localhost:9200'
     ):
         """Create new index.
 
@@ -31,12 +34,33 @@ class Index:
             datadir: Data directory (default: {None})
             es_client: Elasticsearch client,
                 useful in testing (default: {None})
+            host: elasticsearch host (default: {'localhost:9200'})
         """
         self.datadir = datadir
+        self.host = host
         if es_client is not None:
             self.es = es_client
         else:
-            self.es = Elasticsearch(max_retries=2, retry_on_timeout=True)
+            self.es = Elasticsearch(
+                [self.host],
+                max_retries=2,
+                retry_on_timeout=True
+            )
+
+    def ping(self) -> bool:
+        """Ping elastic search server.
+
+        Returns:
+            returns True if elasticsearch responded, otherwise False
+            bool
+        """
+        try:
+            with urllib.request.urlopen(f'http://{self.host}') as response:
+                response.read()
+                return True
+        except (HTTPError, URLError):
+            pass
+        return False
 
     def clear(self):
         """Clear all documents."""

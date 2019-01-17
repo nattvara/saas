@@ -64,6 +64,14 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--elasticsearch-host',
+        metavar='',
+        type=str,
+        default='localhost:9200',
+        help='Elasticsearch host (default: %(default)s)',
+    )
+
+    parser.add_argument(
         '--setup-elasticsearch',
         action='store_true',
         default=False,

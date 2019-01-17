@@ -34,7 +34,8 @@ class Controller:
         amount: int,
         url_file: str,
         ignore_found_urls: bool,
-        stay_at_domain: bool
+        stay_at_domain: bool,
+        elasticsearch_host: str
     ):
         """Start crawler threads.
 
@@ -45,6 +46,7 @@ class Controller:
                 pages it crawls
             stay_at_domain: if crawler should ignore urls from a different
                 domain than the one it was found at
+            elasticsearch_host: elasticsearch host
         """
         console.p(f'starting {amount} crawler threads')
         while amount > 0:
@@ -53,6 +55,7 @@ class Controller:
                 url_file,
                 ignore_found_urls,
                 stay_at_domain,
+                elasticsearch_host,
                 thread_id
             ))
             thread.start()
@@ -61,17 +64,22 @@ class Controller:
             }
             amount -= 1
 
-    def start_stats():
-        """Start stats thread."""
-        thread = Thread(target=_stats_thread, args=())
+    def start_stats(elasticsearch_host: str):
+        """Start stats thread.
+
+        Args:
+            elasticsearch_host: elasticsearch host
+        """
+        thread = Thread(target=_stats_thread, args=(elasticsearch_host,))
         thread.start()
 
     def start_photographers(
         amount: int,
         refresh_rate: refresh.RefreshRate,
         datadir: DataDirectory,
-        viewport_width=int,
-        viewport_height=int,
+        viewport_width: int,
+        viewport_height: int,
+        elasticsearch_host: str
     ):
         """Start photographer threads.
 
@@ -83,6 +91,7 @@ class Controller:
             datadir: Data directory to store pictures in
             viewport_width: width of camera viewport
             viewport_height: height of camera viewport
+            elasticsearch_host: elasticsearch host
         """
         console.p(f'starting {amount} photographer threads')
         Controller.PHOTOGRAPHER_PROCESSES = amount
@@ -93,6 +102,7 @@ class Controller:
                 datadir,
                 viewport_width,
                 viewport_height,
+                elasticsearch_host,
                 thread_id
             ))
             thread.start()
@@ -104,7 +114,8 @@ class Controller:
     def start_filesystem(
         mountpoint: str,
         datadir: DataDirectory,
-        refresh_rate: refresh.RefreshRate
+        refresh_rate: refresh.RefreshRate,
+        elasticsearch_host: str
     ):
         """Start filesystem process.
 
@@ -117,6 +128,7 @@ class Controller:
             datadir: Data directory to store pictures in
             refresh_rate: Which refresh rate filesystem should use
                 for fetching photos
+            elasticsearch_host: elasticsearch host
 
         Returns:
             True if main process, False if the forked process
@@ -130,7 +142,11 @@ class Controller:
             return True
 
         try:
-            Filesystem.mount(mountpoint, Index(datadir), refresh_rate)
+            Filesystem.mount(
+                mountpoint,
+                Index(datadir, host=elasticsearch_host),
+                refresh_rate
+            )
         except RuntimeError as e:
             console.p(f'failed to mount FUSE filesystem: {e}')
 
@@ -177,6 +193,7 @@ def _crawler_thread(
     url_file: str,
     ignore_found_urls: bool,
     stay_at_domain: bool,
+    elasticsearch_host: str,
     thread_id: str
 ):
     """Crawler thread.
@@ -187,12 +204,13 @@ def _crawler_thread(
             pages it crawls
         stay_at_domain: if crawler should ignore urls from a different
             domain than the one it was found at
+        elasticsearch_host: elasticsearch host
         thread_id: id of thread
     """
     try:
         crawler = Crawler(
             url_file=url_file,
-            index=Index(),
+            index=Index(host=elasticsearch_host),
             ignore_found_urls=ignore_found_urls,
             stay_at_domain=stay_at_domain,
         )
@@ -209,10 +227,13 @@ def _crawler_thread(
         Controller.threads[thread_id]['running'] = False
 
 
-def _stats_thread():
+def _stats_thread(elasticsearch_host: str):
     """Stats thread.
 
     Prints system and saas statistics every 5th minute
+
+    Args:
+        elasticsearch_host: elasticsearch host
     """
     start = time.time()
     last_print = 1
@@ -223,7 +244,7 @@ def _stats_thread():
         if mins % 5 != 0 or mins <= last_print:
             continue
 
-        index = Index()
+        index = Index(host=elasticsearch_host)
         last_print = mins
 
         t = '[throughput]           5m: {}, 15m: {}, 30min: {}, 1h: {}'.format(
@@ -256,6 +277,7 @@ def _photographer_thread(
     datadir: DataDirectory,
     viewport_width: int,
     viewport_height: int,
+    elasticsearch_host: str,
     thread_id: str
 ):
     """Photographer thread.
@@ -265,11 +287,12 @@ def _photographer_thread(
         datadir: Data directory to store pictures in
         viewport_width: width of camera viewport
         viewport_height: height of camera viewport
+        elasticsearch_host: elasticsearch host
         thread_id: id of thread
     """
     try:
         photographer = p.Photographer(
-            Index(),
+            Index(host=elasticsearch_host),
             refresh_rate,
             datadir,
             viewport_width,
