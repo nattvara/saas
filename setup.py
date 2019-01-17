@@ -9,7 +9,15 @@ setup(
     author='Ludwig Kristoffersson',
     author_email='ludwig@kristoffersson.org',
     license='MIT',
-    packages=['saas'],
+    packages=[
+        'saas',
+        'saas.crawler',
+        'saas.mount',
+        'saas.photographer',
+        'saas.storage',
+        'saas.utils',
+        'saas.web',
+    ],
     install_requires=[
         'wheel==0.32.*',
         'beeprint==2.4.*',
