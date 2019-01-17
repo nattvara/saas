@@ -28,6 +28,21 @@ class RefreshRate(metaclass=ABCMeta):
         return datetime.datetime.today().strftime(self._lock_datetime_format())
 
 
+class Daily(RefreshRate):
+    """Daily refresh.
+
+    Refresh photographs every day.
+    """
+
+    def lock_format():
+        """Get the human readable format of lock."""
+        return 'daily'
+
+    def _lock_datetime_format(self):
+        """Get the format of lock used to make lock."""
+        return '%Y%m%d'
+
+
 class Hourly(RefreshRate):
     """Hourly refresh.
 
