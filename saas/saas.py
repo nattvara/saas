@@ -52,7 +52,9 @@ def main():
         Controller.start_photographers(
             amount=args.photographer_threads,
             refresh_rate=refresh.Hourly,
-            datadir=DataDirectory(args.data_dir)
+            datadir=DataDirectory(args.data_dir),
+            viewport_width=args.viewport_width,
+            viewport_height=args.viewport_height
         )
 
         while True:

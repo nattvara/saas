@@ -98,4 +98,24 @@ def get_argument_parser():
         help='Use flag to ignore urls found on crawled urls',
     )
 
+    parser.add_argument(
+        '--viewport-width',
+        metavar='',
+        type=int,
+        default=1920,
+        help='Width of camera viewport (default: %(default)s)',
+    )
+
+    parser.add_argument(
+        '--viewport-height',
+        metavar='',
+        type=int,
+        default=0,
+        help='''
+            Height of camera viewport, if set to 0 camera will
+            try to take a full height high quality screenshot,
+            which is way slower than fixed size (default: %(default)s)
+        ''',
+    )
+
     return parser

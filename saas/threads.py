@@ -69,7 +69,9 @@ class Controller:
     def start_photographers(
         amount: int,
         refresh_rate: refresh.RefreshRate,
-        datadir: DataDirectory
+        datadir: DataDirectory,
+        viewport_width=int,
+        viewport_height=int,
     ):
         """Start photographer threads.
 
@@ -79,6 +81,8 @@ class Controller:
                 more exactly defines which lock should be placed on
                 crawled urls
             datadir: Data directory to store pictures in
+            viewport_width: width of camera viewport
+            viewport_height: height of camera viewport
         """
         console.p(f'starting {amount} photographer threads')
         Controller.PHOTOGRAPHER_PROCESSES = amount
@@ -87,6 +91,8 @@ class Controller:
             thread = Thread(target=_photographer_thread, args=(
                 refresh_rate,
                 datadir,
+                viewport_width,
+                viewport_height,
                 thread_id
             ))
             thread.start()
@@ -248,6 +254,8 @@ def _stats_thread():
 def _photographer_thread(
     refresh_rate: refresh.RefreshRate,
     datadir: DataDirectory,
+    viewport_width: int,
+    viewport_height: int,
     thread_id: str
 ):
     """Photographer thread.
@@ -255,13 +263,17 @@ def _photographer_thread(
     Args:
         refresh_rate: How often photographs should be refreshed
         datadir: Data directory to store pictures in
+        viewport_width: width of camera viewport
+        viewport_height: height of camera viewport
         thread_id: id of thread
     """
     try:
         photographer = p.Photographer(
             Index(),
             refresh_rate,
-            datadir
+            datadir,
+            viewport_width,
+            viewport_height
         )
         while Controller.SHOULD_RUN:
             photographer.tick()

@@ -318,11 +318,17 @@ class Index:
             url: Url to set status code of
             status_code: the status code of the http request to the url
         """
-        self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
-            'doc': {
-                'status_code': status_code
+        self.es.update(
+            index='crawled',
+            doc_type='url',
+            id=url.hash(),
+            retry_on_conflict=3,
+            body={
+                'doc': {
+                    'status_code': status_code
+                }
             }
-        })
+        )
 
     def lock_crawled_url(self, url: Url, refresh_rate: RefreshRate):
         """Lock a crawld url.
