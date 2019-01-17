@@ -10,6 +10,7 @@ setup(
     author_email='ludwig@kristoffersson.org',
     license='MIT',
     packages=find_packages(),
+    include_package_data=True,
     install_requires=[
         'wheel==0.32.*',
         'beeprint==2.4.*',
