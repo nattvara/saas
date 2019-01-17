@@ -181,45 +181,38 @@ class Index:
             })
         return prepared
 
-    def most_recent_uncrawled_url(self):
-        """Get the most recently uncrawled url.
-
-        Fetches the most recently added uncrawled url.
+    def random_uncrawled_url(self) -> Url:
+        """Get random uncrawled url.
 
         Returns:
-            Most recent url found like the following,
-                {
-                  "_index": "uncrawled",
-                  "_type": "url",
-                  "_id": "xxx...", sha256
-                  "_score": null,
-                  "_source": {
-                    "url": "http://example.com",
-                    "timestamp": 1547145709
-                  },
-                  "sort": [
-                    1547145709
-                  ]
-                }
-            dict or None
+            An uncrawled url
+            Url
+
+        Raises:
+            EmptySearchResultException: if index is empty
         """
         res = self.es.search(index='uncrawled', size=1, body={
             'query': {
-                'match_all': {}
-            },
-            'sort': [
-                {
-                    'timestamp': {
-                        'order': 'desc'
-                    }
+                'function_score': {
+                    'query': {
+                        'bool': {
+                            'must_not': {
+                                'term': {
+                                    'crawled': True
+                                }
+                            }
+                        }
+                    },
+                    'random_score': {}
                 }
-            ]
+            }
         })
 
         if res['hits']['total'] == 0:
-            return None
+            raise EmptySearchResultException('if index is empty')
 
-        return res['hits']['hits'][0]
+        url = Url.from_string(res['hits']['hits'][0]['_source']['url'])
+        return url
 
     def recently_crawled_url(self, refresh_rate=RefreshRate):
         """Get recently crawled url.

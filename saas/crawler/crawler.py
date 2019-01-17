@@ -1,8 +1,8 @@
 """Crawler module."""
 
 from __future__ import annotations
+from saas.storage.index import Index, EmptySearchResultException
 from saas.web.browser import Browser
-from saas.storage.index import Index
 from saas.web.url import Url
 import time
 import os
@@ -148,11 +148,12 @@ class Crawler:
             A url to crawl, None if no url was found
             Url or None
         """
-        doc = self.index.most_recent_uncrawled_url()
-        if doc is None:
+        try:
+            url = self.index.random_uncrawled_url()
+        except EmptySearchResultException:
             return None
-        self.index.remove_uncrawled_url(doc['_id'])
-        return Url.from_string(doc['_source']['url'])
+        self.index.remove_uncrawled_url(url.hash())
+        return url
 
     def stop(self):
         """Stop crawler."""
