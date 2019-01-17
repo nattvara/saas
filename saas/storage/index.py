@@ -743,7 +743,12 @@ class Index:
         })
         files = []
         for doc in res['hits']['hits']:
-            files.append(doc['_source']['filename'])
+            if doc['_source']['filesize'] < 100:
+                files.append(
+                    doc['_source']['filename'] + file.Path.RENDERING_EXTENSION
+                )
+            else:
+                files.append(doc['_source']['filename'])
         return files
 
     def photos_list_directories_in_directory(
