@@ -23,6 +23,12 @@ def main():
         index = Index(host=args.elasticsearch_host)
         datadir = DataDirectory(args.data_dir)
 
+        refresh_rate = {
+            'day': refresh.Daily,
+            'hour': refresh.Hourly,
+            'minute': refresh.EveryMinute,
+        }[args.refresh_rate]
+
         if not index.ping():
             console.p('ERROR: failed to connect to elasticsearch')
             sys.exit()
@@ -40,7 +46,7 @@ def main():
         if not Controller.start_filesystem(
             mountpoint=args.mountpoint,
             datadir=datadir,
-            refresh_rate=refresh.Hourly,
+            refresh_rate=refresh_rate,
             elasticsearch_host=args.elasticsearch_host
         ):
             sys.exit()
@@ -59,7 +65,7 @@ def main():
 
         Controller.start_photographers(
             amount=args.photographer_threads,
-            refresh_rate=refresh.Hourly,
+            refresh_rate=refresh_rate,
             datadir=DataDirectory(args.data_dir),
             viewport_width=args.viewport_width,
             viewport_height=args.viewport_height,

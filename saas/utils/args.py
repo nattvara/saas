@@ -26,6 +26,18 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--refresh-rate',
+        metavar='',
+        type=str,
+        default='hour',
+        choices=['day', 'hour', 'minute'],
+        help='''
+            Refresh captures of urls every 'day', 'hour'
+            or 'minute' (default: %(default)s)
+        ''',
+    )
+
+    parser.add_argument(
         '--crawler-threads',
         metavar='',
         type=int,
