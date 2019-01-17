@@ -1,6 +1,6 @@
 """Setup."""
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='saas',
@@ -9,15 +9,7 @@ setup(
     author='Ludwig Kristoffersson',
     author_email='ludwig@kristoffersson.org',
     license='MIT',
-    packages=[
-        'saas',
-        'saas.crawler',
-        'saas.mount',
-        'saas.photographer',
-        'saas.storage',
-        'saas.utils',
-        'saas.web',
-    ],
+    packages=find_packages(),
     install_requires=[
         'wheel==0.32.*',
         'beeprint==2.4.*',
