@@ -19,7 +19,8 @@ class Crawler:
         self,
         url_file: str,
         index: Index,
-        ignore_found_urls: bool=False
+        ignore_found_urls: bool=False,
+        stay_at_domain: bool=False,
     ):
         """Create crawler.
 
@@ -28,11 +29,14 @@ class Crawler:
             index: Index storage for queued urls
             ignore_found_urls: if crawler should ignore new urls found on
                 pages it crawls
+            stay_at_domain: if crawler should ignore urls from a different
+                domain than the one it was found at
         """
         self.source_is_open = False
         self.source_path = ''
         self._open_source('r', url_file)
         self.ignore_found_urls = ignore_found_urls
+        self.stay_at_domain = stay_at_domain
         self.index = index
 
     def _open_source(self, mode: str, url_file: str=''):
@@ -110,6 +114,9 @@ class Crawler:
 
             if page.status_code != 200:
                 return
+
+            if self.stay_at_domain:
+                page.remove_urls_not_from_domain(url.domain)
 
             self.index.add_uncrawled_urls(page.urls)
 

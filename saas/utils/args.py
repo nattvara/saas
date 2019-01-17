@@ -13,7 +13,7 @@ def get_argument_parser():
 
     parser.add_argument(
         'url_file',
-        type=argparse.FileType('w'),
+        type=str,
         default=None,
         help='Path to input url file',
     )
@@ -78,6 +78,16 @@ def get_argument_parser():
             Use flag to clear elasticsearch on start,
             WARNING: this will clear all indices found
             in elasticsearch instance
+        ''',
+    )
+
+    parser.add_argument(
+        '--stay-at-domain',
+        action='store_true',
+        default=False,
+        help='''
+            Use flag to ignore urls from a different
+            domain than the one it was found at
         ''',
     )
 

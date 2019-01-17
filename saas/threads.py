@@ -1,10 +1,10 @@
 """Threads module."""
 
 from __future__ import annotations
+from saas.crawler.crawler import Crawler, UrlFileNotFoundError
 from saas.storage.datadir import DataDirectory
 import saas.photographer.photographer as p
 import saas.mount.filesystem as Filesystem
-from saas.crawler.crawler import Crawler
 from saas.utils.files import real_path
 import saas.storage.refresh as refresh
 import saas.utils.console as console
@@ -33,7 +33,8 @@ class Controller:
     def start_crawlers(
         amount: int,
         url_file: str,
-        ignore_found_urls: bool
+        ignore_found_urls: bool,
+        stay_at_domain: bool
     ):
         """Start crawler threads.
 
@@ -42,6 +43,8 @@ class Controller:
             url_file: path to urls file
             ignore_found_urls: if crawler should ignore new urls found on
                 pages it crawls
+            stay_at_domain: if crawler should ignore urls from a different
+                domain than the one it was found at
         """
         console.p(f'starting {amount} crawler threads')
         while amount > 0:
@@ -49,6 +52,7 @@ class Controller:
             thread = Thread(target=_crawler_thread, args=(
                 url_file,
                 ignore_found_urls,
+                stay_at_domain,
                 thread_id
             ))
             thread.start()
@@ -166,6 +170,7 @@ class Controller:
 def _crawler_thread(
     url_file: str,
     ignore_found_urls: bool,
+    stay_at_domain: bool,
     thread_id: str
 ):
     """Crawler thread.
@@ -174,6 +179,8 @@ def _crawler_thread(
         url_file: path to url file
         ignore_found_urls: if crawler should ignore new urls found on
             pages it crawls
+        stay_at_domain: if crawler should ignore urls from a different
+            domain than the one it was found at
         thread_id: id of thread
     """
     try:
@@ -181,9 +188,15 @@ def _crawler_thread(
             url_file=url_file,
             index=Index(),
             ignore_found_urls=ignore_found_urls,
+            stay_at_domain=stay_at_domain,
         )
         while Controller.SHOULD_RUN:
             crawler.tick()
+    except UrlFileNotFoundError:
+        console.p(f'ERROR: url_file was not found at \'{url_file}\'')
+        time.sleep(2)
+        Controller.threads[thread_id]['running'] = False
+        Controller.stop_all()
     except Exception as e:
         console.p(f'error occured in crawler thread {thread_id}: {e}')
     finally:
