@@ -11,6 +11,7 @@ class Page:
         """Create new page."""
         self.urls = []
         self.status_code = None
+        self.content_type = None
 
     def add_url(self, url: Url):
         """Add url.
@@ -19,3 +20,15 @@ class Page:
             url: Url to add
         """
         self.urls.append(url)
+
+    def remove_urls_not_from_domain(self, domain: str):
+        """Remove urls not from given domain.
+
+        Args:
+            domain: domain urls should be from
+        """
+        cleaned = []
+        for url in self.urls:
+            if url.domain == domain:
+                cleaned.append(url)
+        self.urls = cleaned

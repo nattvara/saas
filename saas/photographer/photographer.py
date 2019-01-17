@@ -21,7 +21,9 @@ class Photographer:
         self,
         index: Index,
         refresh_rate: refresh.RefreshRate,
-        datadir: DataDirectory
+        datadir: DataDirectory,
+        viewport_width: int=1920,
+        viewport_height: int=0,
     ):
         """Create new photographer.
 
@@ -32,10 +34,14 @@ class Photographer:
                 more exactly defines which lock should be placed on
                 crawled urls
             datadir: Data directory to store pictures in
+            viewport_width: width of camera viewport
+            viewport_height: height of camera viewport
         """
         self.index = index
         self.refresh_rate = refresh_rate
         self.datadir = datadir
+        self.viewport_width = viewport_width
+        self.viewport_height = viewport_height
 
     def tick(self):
         """Tick.
@@ -57,7 +63,10 @@ class Photographer:
             photo.save_loading_text()
             self.index.save_photo(photo)
 
-            camera = c.Camera()
+            camera = c.Camera(
+                viewport_width=self.viewport_width,
+                viewport_height=self.viewport_height,
+            )
             photo = camera.take_picture(url, path, self.refresh_rate)
             self.index.save_photo(photo)
 

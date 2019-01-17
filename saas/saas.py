@@ -20,8 +20,18 @@ def main():
 
         JavascriptSnippets.load()
 
-        index = Index()
+        index = Index(host=args.elasticsearch_host)
         datadir = DataDirectory(args.data_dir)
+
+        refresh_rate = {
+            'day': refresh.Daily,
+            'hour': refresh.Hourly,
+            'minute': refresh.EveryMinute,
+        }[args.refresh_rate]
+
+        if not index.ping():
+            console.p('ERROR: failed to connect to elasticsearch')
+            sys.exit()
 
         if args.setup_elasticsearch:
             index.create_indices()
@@ -36,20 +46,30 @@ def main():
         if not Controller.start_filesystem(
             mountpoint=args.mountpoint,
             datadir=datadir,
-            refresh_rate=refresh.Hourly
+            refresh_rate=refresh_rate,
+            elasticsearch_host=args.elasticsearch_host
         ):
             sys.exit()
+
+        Controller.start_stats(
+            elasticsearch_host=args.elasticsearch_host
+        )
 
         Controller.start_crawlers(
             amount=args.crawler_threads,
             url_file=args.url_file,
             ignore_found_urls=args.ignore_found_urls,
+            stay_at_domain=args.stay_at_domain,
+            elasticsearch_host=args.elasticsearch_host
         )
 
         Controller.start_photographers(
             amount=args.photographer_threads,
-            refresh_rate=refresh.Hourly,
-            datadir=DataDirectory(args.data_dir)
+            refresh_rate=refresh_rate,
+            datadir=DataDirectory(args.data_dir),
+            viewport_width=args.viewport_width,
+            viewport_height=args.viewport_height,
+            elasticsearch_host=args.elasticsearch_host
         )
 
         while True:

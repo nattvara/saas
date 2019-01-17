@@ -4,13 +4,16 @@ from __future__ import annotations
 from saas.photographer.photo import Photo, PhotoPath, Screenshot
 from saas.storage.datadir import DataDirectory
 from saas.storage.refresh import RefreshRate
+from urllib.error import HTTPError, URLError
+from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import saas.utils.console as console
 from saas.web.url import Url, UrlId
 import saas.mount.file as file
-import time
+import urllib.request
 import random
+import time
 
 
 class Index:
@@ -22,7 +25,8 @@ class Index:
     def __init__(
         self,
         datadir: DataDirectory=None,
-        es_client: Elasticsearch=None
+        es_client: Elasticsearch=None,
+        host: str='localhost:9200'
     ):
         """Create new index.
 
@@ -30,12 +34,33 @@ class Index:
             datadir: Data directory (default: {None})
             es_client: Elasticsearch client,
                 useful in testing (default: {None})
+            host: elasticsearch host (default: {'localhost:9200'})
         """
         self.datadir = datadir
+        self.host = host
         if es_client is not None:
             self.es = es_client
         else:
-            self.es = Elasticsearch(max_retries=2, retry_on_timeout=True)
+            self.es = Elasticsearch(
+                [self.host],
+                max_retries=2,
+                retry_on_timeout=True
+            )
+
+    def ping(self) -> bool:
+        """Ping elastic search server.
+
+        Returns:
+            returns True if elasticsearch responded, otherwise False
+            bool
+        """
+        try:
+            with urllib.request.urlopen(f'http://{self.host}') as response:
+                response.read()
+                return True
+        except (HTTPError, URLError):
+            pass
+        return False
 
     def clear(self):
         """Clear all documents."""
@@ -57,6 +82,34 @@ class Index:
             'settings': Settings.photos,
         })
         console.p('done.')
+
+    def calculate_throughput(self, timeframe: int) -> int:
+        """Calculate throughput.
+
+        Number of photos stored in index during timeframe
+
+        Args:
+            timeframe: timeframe in minutes
+
+        Returns:
+            number of photos stored in index during timeframe
+            int
+        """
+        now = datetime.now()
+        start = int((now - timedelta(minutes=timeframe)).timestamp())
+        end = now.timestamp()
+
+        res = self.es.search(index='photos', size=0, body={
+            'query': {
+                'range': {
+                    'timestamp': {
+                        'gte': start,
+                        'lte': end,
+                    },
+                }
+            }
+        })
+        return res['hits']['total']
 
     def add_crawled_url(self, url: Url):
         """Add crawled url.
@@ -152,45 +205,38 @@ class Index:
             })
         return prepared
 
-    def most_recent_uncrawled_url(self):
-        """Get the most recently uncrawled url.
-
-        Fetches the most recently added uncrawled url.
+    def random_uncrawled_url(self) -> Url:
+        """Get random uncrawled url.
 
         Returns:
-            Most recent url found like the following,
-                {
-                  "_index": "uncrawled",
-                  "_type": "url",
-                  "_id": "xxx...", sha256
-                  "_score": null,
-                  "_source": {
-                    "url": "http://example.com",
-                    "timestamp": 1547145709
-                  },
-                  "sort": [
-                    1547145709
-                  ]
-                }
-            dict or None
+            An uncrawled url
+            Url
+
+        Raises:
+            EmptySearchResultException: if index is empty
         """
         res = self.es.search(index='uncrawled', size=1, body={
             'query': {
-                'match_all': {}
-            },
-            'sort': [
-                {
-                    'timestamp': {
-                        'order': 'desc'
-                    }
+                'function_score': {
+                    'query': {
+                        'bool': {
+                            'must_not': {
+                                'term': {
+                                    'crawled': True
+                                }
+                            }
+                        }
+                    },
+                    'random_score': {}
                 }
-            ]
+            }
         })
 
         if res['hits']['total'] == 0:
-            return None
+            raise EmptySearchResultException('if index is empty')
 
-        return res['hits']['hits'][0]
+        url = Url.from_string(res['hits']['hits'][0]['_source']['url'])
+        return url
 
     def recently_crawled_url(self, refresh_rate=RefreshRate):
         """Get recently crawled url.
@@ -296,11 +342,17 @@ class Index:
             url: Url to set status code of
             status_code: the status code of the http request to the url
         """
-        self.es.update(index='crawled', doc_type='url', id=url.hash(), body={
-            'doc': {
-                'status_code': status_code
+        self.es.update(
+            index='crawled',
+            doc_type='url',
+            id=url.hash(),
+            retry_on_conflict=3,
+            body={
+                'doc': {
+                    'status_code': status_code
+                }
             }
-        })
+        )
 
     def lock_crawled_url(self, url: Url, refresh_rate: RefreshRate):
         """Lock a crawld url.
@@ -715,7 +767,12 @@ class Index:
         })
         files = []
         for doc in res['hits']['hits']:
-            files.append(doc['_source']['filename'])
+            if doc['_source']['filesize'] < 100:
+                files.append(
+                    doc['_source']['filename'] + file.Path.RENDERING_EXTENSION
+                )
+            else:
+                files.append(doc['_source']['filename'])
         return files
 
     def photos_list_directories_in_directory(

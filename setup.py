@@ -11,11 +11,12 @@ setup(
     license='MIT',
     packages=['saas'],
     install_requires=[
-        'wheel',
-        'beeprint',
-        'elasticsearch',
-        'selenium',
-        'fusepy',
+        'wheel==0.32.*',
+        'beeprint==2.4.*',
+        'elasticsearch==6.3.*',
+        'selenium==3.141.*',
+        'fusepy==3.0.*',
+        'psutil==4.3.*',
     ],
     entry_points={
         'console_scripts': [

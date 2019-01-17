@@ -1,9 +1,9 @@
 """Crawler test."""
 
+from saas.storage.index import Index, EmptySearchResultException
 import saas.utils.console as console
 from saas.crawler.crawler import Crawler
 from os.path import dirname, realpath
-from saas.storage.index import Index
 from unittest.mock import MagicMock
 from saas.web.url import Url
 import unittest
@@ -75,18 +75,9 @@ class TestCrawler(unittest.TestCase):
     def test_crawler_can_read_next_url_from_index(self):
         """Test crawler can read next url from source."""
         index = Index()
+        url = Url.from_string('https://example.com/foo')
         index.remove_uncrawled_url = MagicMock()
-        index.most_recent_uncrawled_url = MagicMock(
-            return_value={
-                '_index': 'uncrawled',
-                '_type': 'url',
-                '_id': 'xxx...',
-                '_score': 1.0,
-                '_source': {
-                    'url': 'https://example.com/foo'
-                }
-            }
-        )
+        index.random_uncrawled_url = MagicMock(return_value=url)
 
         self.crawler = Crawler(self.path_to_url_source, index)
 
@@ -94,12 +85,13 @@ class TestCrawler(unittest.TestCase):
             Url.from_string('https://example.com/foo').to_string(),
             self.crawler._next_url().to_string()
         )
-        index.remove_uncrawled_url.assert_called_with('xxx...')
+        index.remove_uncrawled_url.assert_called_with(url.hash())
 
     def test_next_url_returns_none_if_no_url_was_found(self):
         """Test _next_url() returns None if no url was found."""
         index = Index()
-        index.most_recent_uncrawled_url = MagicMock(return_value=None)
+        index.random_uncrawled_url = MagicMock()
+        index.random_uncrawled_url.side_effect = EmptySearchResultException()
         self.crawler = Crawler(self.path_to_url_source, index)
 
         self.assertEqual(

@@ -37,6 +37,7 @@ class Browser:
             return page
 
         page.status_code = response.getcode()
+        page.content_type = response.info().get_content_type().strip()
         links = parser.parse(str(html))
 
         for link in links:
@@ -44,8 +45,7 @@ class Browser:
                 page.add_url(Url.from_string(link))
             except InvalidUrlException as e:
                 try:
-                    url = url.create_child_url(link)
-                    page.add_url(url)
+                    page.add_url(url.create_child_url(link))
                 except InvalidUrlException as e:
                     pass
         return page

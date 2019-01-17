@@ -1,8 +1,8 @@
 """Crawler module."""
 
 from __future__ import annotations
+from saas.storage.index import Index, EmptySearchResultException
 from saas.web.browser import Browser
-from saas.storage.index import Index
 from saas.web.url import Url
 import time
 import os
@@ -19,7 +19,8 @@ class Crawler:
         self,
         url_file: str,
         index: Index,
-        ignore_found_urls: bool=False
+        ignore_found_urls: bool=False,
+        stay_at_domain: bool=False,
     ):
         """Create crawler.
 
@@ -28,11 +29,14 @@ class Crawler:
             index: Index storage for queued urls
             ignore_found_urls: if crawler should ignore new urls found on
                 pages it crawls
+            stay_at_domain: if crawler should ignore urls from a different
+                domain than the one it was found at
         """
         self.source_is_open = False
         self.source_path = ''
         self._open_source('r', url_file)
         self.ignore_found_urls = ignore_found_urls
+        self.stay_at_domain = stay_at_domain
         self.index = index
 
     def _open_source(self, mode: str, url_file: str=''):
@@ -100,6 +104,9 @@ class Crawler:
             self.index.add_crawled_url(url)
 
             page = Browser.get_page(url)
+            if 'text/html' not in page.content_type:
+                page.status_code = 0
+
             self.index.set_status_code_for_crawled_url(
                 url,
                 page.status_code
@@ -110,6 +117,9 @@ class Crawler:
 
             if page.status_code != 200:
                 return
+
+            if self.stay_at_domain:
+                page.remove_urls_not_from_domain(url.domain)
 
             self.index.add_uncrawled_urls(page.urls)
 
@@ -148,11 +158,12 @@ class Crawler:
             A url to crawl, None if no url was found
             Url or None
         """
-        doc = self.index.most_recent_uncrawled_url()
-        if doc is None:
+        try:
+            url = self.index.random_uncrawled_url()
+        except EmptySearchResultException:
             return None
-        self.index.remove_uncrawled_url(doc['_id'])
-        return Url.from_string(doc['_source']['url'])
+        self.index.remove_uncrawled_url(url.hash())
+        return url
 
     def stop(self):
         """Stop crawler."""

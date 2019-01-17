@@ -16,11 +16,20 @@ import os
 class Camera:
     """Camera class."""
 
-    def __init__(self):
-        """Create new camera."""
+    def __init__(self, viewport_width: int=1920, viewport_height: int=0):
+        """Create new camera.
+
+        Args:
+            viewport_width: width of camera viewport (default: {1920})
+            viewport_height: height of camera viewport, if set to 0 camera
+                will try to take a full height high quality screenshot,
+                which is way slower than fixed size (default: {0})
+        """
         self.webdriver = None
         self.width = 0
         self.height = 0
+        self.viewport_width = viewport_width
+        self.viewport_height = viewport_height
 
     def take_picture(
         self, url: Url,
@@ -53,22 +62,33 @@ class Camera:
                 self.webdriver.service.process.pid
             )
             self._route(url)
-            self._set_resolution(1920, 1080)
-            self._start_images_monitor()
 
-            # scroll down the page to trigger load of images
-            steps = 2 * int(self._document_height() / self.height)
-            for i in range(1, steps):
-                self._scroll_y_axis((self.height / 2) * i)
+            if self.viewport_height != 0:
+                # fixed height
+                self._set_resolution(self.viewport_width, self.viewport_height)
+                self._start_images_monitor()
                 self._wait_for_images_to_load()
+            else:
+                # fullpage screenshot
+                self._set_resolution(self.viewport_width, 1080)
+                self._start_images_monitor()
 
-            # resize the viewport and make sure that it's scrolled
-            # all the way to the top
-            self._scroll_y_axis(0)
-            self._set_resolution(1920, self._document_height())
-            self._wait_for_images_to_load()
-            self._scroll_y_axis(-500)
-            self._wait_for_resize()
+                # scroll down the page to trigger load of images
+                steps = 2 * int(self._document_height() / self.height)
+                for i in range(1, steps):
+                    self._scroll_y_axis((self.height / 2) * i)
+                    self._wait_for_images_to_load()
+
+                # resize the viewport and make sure that it's scrolled
+                # all the way to the top
+                self._scroll_y_axis(0)
+                self._set_resolution(
+                    self.viewport_width,
+                    self._document_height()
+                )
+                self._wait_for_images_to_load()
+                self._scroll_y_axis(-500)
+                self._wait_for_resize()
 
             self._save(path)
         except RemoteDisconnected:

@@ -10,6 +10,8 @@ import os
 class Path:
     """Path class."""
 
+    RENDERING_EXTENSION = '.rendering.saas'
+
     def __init__(self, path: str):
         """Create path.
 
@@ -24,6 +26,8 @@ class Path:
 
         if path[0] != '/':
             raise InvalidPathException('path must start with a slash \'/\'')
+
+        path = path.replace(Path.RENDERING_EXTENSION, '')
 
         self.domain = self._parse_domain(path)
         self.captured_at = self._parse_captured_at(path)
