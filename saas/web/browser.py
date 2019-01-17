@@ -37,6 +37,7 @@ class Browser:
             return page
 
         page.status_code = response.getcode()
+        page.content_type = response.info().get_content_type().strip()
         links = parser.parse(str(html))
 
         for link in links:

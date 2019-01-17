@@ -104,6 +104,9 @@ class Crawler:
             self.index.add_crawled_url(url)
 
             page = Browser.get_page(url)
+            if 'text/html' not in page.content_type:
+                page.status_code = 0
+
             self.index.set_status_code_for_crawled_url(
                 url,
                 page.status_code
