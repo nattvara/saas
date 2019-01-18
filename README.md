@@ -244,7 +244,7 @@ By default the camera tries to take a full screen screenshot. This means that it
 ### Full list of options
 
 ```
-usage: saas [-h] [--version] [--refresh-rate] [--crawler-threads]
+usage: saas [-h] [--version] [--debug] [--refresh-rate] [--crawler-threads]
             [--photographer-threads] [--data-dir] [--clear-data-dir]
             [--elasticsearch-host] [--setup-elasticsearch]
             [--clear-elasticsearch] [--stay-at-domain] [--ignore-found-urls]
@@ -260,6 +260,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
+  --debug               Display debugging information
   --refresh-rate        Refresh captures of urls every 'day', 'hour' or
                         'minute' (default: hour)
   --crawler-threads     Number of crawler threads, usually not neccessary with
