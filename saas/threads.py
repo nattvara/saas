@@ -35,7 +35,8 @@ class Controller:
         url_file: str,
         ignore_found_urls: bool,
         stay_at_domain: bool,
-        elasticsearch_host: str
+        elasticsearch_host: str,
+        debug: bool
     ):
         """Start crawler threads.
 
@@ -47,6 +48,7 @@ class Controller:
             stay_at_domain: if crawler should ignore urls from a different
                 domain than the one it was found at
             elasticsearch_host: elasticsearch host
+            debug: Display debugging information
         """
         console.p(f'starting {amount} crawler threads')
         while amount > 0:
@@ -56,6 +58,7 @@ class Controller:
                 ignore_found_urls,
                 stay_at_domain,
                 elasticsearch_host,
+                debug,
                 thread_id
             ))
             thread.start()
@@ -79,7 +82,8 @@ class Controller:
         datadir: DataDirectory,
         viewport_width: int,
         viewport_height: int,
-        elasticsearch_host: str
+        elasticsearch_host: str,
+        debug: bool
     ):
         """Start photographer threads.
 
@@ -92,6 +96,7 @@ class Controller:
             viewport_width: width of camera viewport
             viewport_height: height of camera viewport
             elasticsearch_host: elasticsearch host
+            debug: Display debugging information
         """
         console.p(f'starting {amount} photographer threads')
         Controller.PHOTOGRAPHER_PROCESSES = amount
@@ -103,6 +108,7 @@ class Controller:
                 viewport_width,
                 viewport_height,
                 elasticsearch_host,
+                debug,
                 thread_id
             ))
             thread.start()
@@ -194,6 +200,7 @@ def _crawler_thread(
     ignore_found_urls: bool,
     stay_at_domain: bool,
     elasticsearch_host: str,
+    debug: bool,
     thread_id: str
 ):
     """Crawler thread.
@@ -205,6 +212,7 @@ def _crawler_thread(
         stay_at_domain: if crawler should ignore urls from a different
             domain than the one it was found at
         elasticsearch_host: elasticsearch host
+        debug: Display debugging information
         thread_id: id of thread
     """
     try:
@@ -223,6 +231,8 @@ def _crawler_thread(
         Controller.stop_all()
     except Exception as e:
         console.p(f'error occured in crawler thread {thread_id}: {e}')
+        if debug:
+            raise e
     finally:
         Controller.threads[thread_id]['running'] = False
 
@@ -278,6 +288,7 @@ def _photographer_thread(
     viewport_width: int,
     viewport_height: int,
     elasticsearch_host: str,
+    debug: bool,
     thread_id: str
 ):
     """Photographer thread.
@@ -288,6 +299,7 @@ def _photographer_thread(
         viewport_width: width of camera viewport
         viewport_height: height of camera viewport
         elasticsearch_host: elasticsearch host
+        debug: Display debugging information
         thread_id: id of thread
     """
     try:
@@ -302,5 +314,7 @@ def _photographer_thread(
             photographer.tick()
     except Exception as e:
         console.p(f'error occured in photographer thread {thread_id}: {e}')
+        if debug:
+            raise e
     finally:
         Controller.threads[thread_id]['running'] = False
