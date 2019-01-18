@@ -1,0 +1,16 @@
+{
+    "description": "modify requests headers to add a referer header from google.com",
+    "manifest_version": 2,
+    "name": "referer_header",
+    "version": "1.0",
+    "permissions": [
+        "webRequest",
+        "webRequestBlocking",
+        "*://*/*"
+    ],
+    "background": {
+        "scripts": [
+            "main.js"
+        ]
+    }
+}
