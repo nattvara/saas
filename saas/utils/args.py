@@ -19,6 +19,13 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--debug',
+        action='store_true',
+        default=False,
+        help='Display debugging information',
+    )
+
+    parser.add_argument(
         'url_file',
         type=str,
         default=None,
