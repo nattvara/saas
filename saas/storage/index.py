@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from saas.photographer.photo import Photo, PhotoPath, Screenshot
+from elasticsearch.exceptions import RequestError
 from saas.storage.datadir import DataDirectory
 from saas.storage.refresh import RefreshRate
 from urllib.error import HTTPError, URLError
@@ -71,17 +72,20 @@ class Index:
     def create_indices(self):
         """Create indices in elasticsearch."""
         console.p('creating indices')
-        self.es.indices.create('uncrawled', body={
-            'mappings': Mappings.uncrawled
-        })
-        self.es.indices.create('crawled', body={
-            'mappings': Mappings.crawled
-        })
-        self.es.indices.create('photos', body={
-            'mappings': Mappings.photos,
-            'settings': Settings.photos,
-        })
-        console.p('done.')
+        try:
+            self.es.indices.create('uncrawled', body={
+                'mappings': Mappings.uncrawled
+            })
+            self.es.indices.create('crawled', body={
+                'mappings': Mappings.crawled
+            })
+            self.es.indices.create('photos', body={
+                'mappings': Mappings.photos,
+                'settings': Settings.photos,
+            })
+            console.p('done.')
+        except RequestError:
+            console.p('indices already exist, skipping.')
 
     def calculate_throughput(self, timeframe: int) -> int:
         """Calculate throughput.

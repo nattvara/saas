@@ -1,5 +1,6 @@
 """Arguments module."""
 
+from pkg_resources import get_distribution
 import argparse
 
 
@@ -9,6 +10,12 @@ def get_argument_parser():
         prog='saas',
         description='Screenshot as a service',
         formatter_class=argparse.HelpFormatter,
+    )
+
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s {}'.format(get_distribution('saas').version),
     )
 
     parser.add_argument(
@@ -52,7 +59,7 @@ def get_argument_parser():
         '--photographer-threads',
         metavar='',
         type=int,
-        default=2,
+        default=1,
         help='''
             Number of photographer threads, beaware that
             increasing too much won't neccessarily speed up

@@ -99,6 +99,18 @@ class Filesystem(Operations):
         """
         return os.open(self._translate_path(path), flags)
 
+    def release(self, path: str, fh: int):
+        """Release file.
+
+        Closes file descriptor, so that it no longer
+        refers to any file and may be reused.
+
+        Args:
+            path: path to a file
+            fh: file descriptor
+        """
+        os.close(fh)
+
     def read(self, path: str, length: int, offset: int, fh: int) -> str:
         """Read from file.
 

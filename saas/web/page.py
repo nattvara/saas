@@ -11,7 +11,7 @@ class Page:
         """Create new page."""
         self.urls = []
         self.status_code = None
-        self.content_type = None
+        self.content_type = ''
 
     def add_url(self, url: Url):
         """Add url.
