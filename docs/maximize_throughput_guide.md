@@ -103,14 +103,6 @@ python --version
 # Python 3.7.2
 ```
 
-### Installing FUSE
-
-Fuse should be preinstalled, but otherwise you can install it using the following
-
-```bash
-sudo apt-get install fuse
-```
-
 ### Firefox
 
 Saas uses firefox to render webpages and [selenium](https://github.com/SeleniumHQ/selenium) to communicate with firefox. Selenium depends on [geckodriver by mozilla](https://github.com/mozilla/geckodriver), so we'll need to install that as well.
