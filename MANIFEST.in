@@ -1,2 +1,3 @@
 recursive-include saas/photographer/js *
 include LICENSE
+recursive-include extensions *
