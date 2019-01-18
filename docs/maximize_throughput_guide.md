@@ -2,6 +2,8 @@
 
 This guide will show you how to setup saas in a configuration with more than one server. Saaas uses elasticsearch as an index for urls and photos that have been taken. This allows for virtually unlimited amount of saas clients working with the same index. All machines need to have access to the same data directory, this guide will show you how to setup a shared network drive on aws, using EFS, but the same principles should apply to other cloud platform providers.
 
+![Screenshot of the terminal running saas](images/terminal_screenshot.png)
+
 ## Servers
 
 This guide will refer to these types of servers
@@ -226,6 +228,8 @@ Create an image of the fuse instance.
 
 Spawn new instances from the AMI, as many as you need.
 
+![Instances in the AWS EC2 console](images/aws_console.png)
+
 ## Some Results
 
 The biggest bottleneck is rendering, and the best way to ensure fast render times is a fixed viewport size and a stay on non-image-heavy sites.
@@ -257,7 +261,9 @@ A 1 hour test generated the following stats (load, cpu and memory are for the si
 [memory usage]         25.5%
 ```
 
-The one hour average of __400 photos rendered / minute__ results in 24 000 photos / hour, and 576 000 / day
+The one hour average of __400 photos rendered / minute__ results in
 
-![Instances in the AWS EC2 console](images/aws_console.png)
-![Screenshot of the terminal running the test](images/terminal_screenshot.png)
+- __24 000 photos / hour__
+- __576 000 photos / day__
+
+The number of photos rendered per minute scales linearly with the number of instances running saas. So adding more instances will improve those numbers.
