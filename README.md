@@ -391,6 +391,10 @@ The biggest hit to performance are taking photos of image-heavy sites or using a
 
 Checkout the guide [Maximize saas throughput](docs/maximize_throughput_guide.md) for a thorough guide for how to deploy a large cluster of saas nodes on AWS and optimize performance.
 
+## Examples
+
+See [examples/](examples/README.md) for some good examples for testing saas.
+
 ## Known issues
 
 Under some circumstances, a fatal crash for instance, the mounted filesystem might not unmount automatically. If this happens, run
