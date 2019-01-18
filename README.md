@@ -334,7 +334,29 @@ $ tree ~/.saas-data-dir/
     └── d8ed2aab-ab70-4dfe-a600-143878916063.png
 ```
 
-## Run the testsuite
+## Build
+
+### Firefox extensions
+
+The camera module uses selenium to render pages. To improve performance saas uses [uBlock Origin](https://github.com/gorhill/uBlock) to block ads. To have greater access to more webpages saas uses [I don't care about cookies](https://www.i-dont-care-about-cookies.eu/) to bypass popups and GDPR concent forms. Many websites also employ the practice of paywalls for some of their content, however, many websites leave their site open to users comming from search engines and social media sites. Saas therfore has a small custom [firefox extension](extensions/referer_header) to rewrite all http requests made from firefox to include the header `Referer: https://google.com` - this will allow access to a lot more content on the web.
+
+#### Updating uBlock Origin
+
+Download the latest ublock.xpi from [gorhill/uBlock releases](https://github.com/gorhill/uBlock/releases) and replace the version in the `extensions/` directory.
+
+#### Updating IDCAC
+
+Download and install the latest version using firefox from [https://www.i-dont-care-about-cookies.eu/](https://www.i-dont-care-about-cookies.eu/). Locate the `.xpi` file inside Firefox's extensions directory, on macOS this is `~/Library/Application Support/Firefox/Profiles/[profile]/extensions/`. Copy the `.xpi` file to the `extensions/` directory.
+
+#### Referer Header
+
+Make zip archive of source files
+
+```bash
+zip -r -j -FS extensions/referer_header.xpi extensions/referer_header/*
+```
+
+### Run the testsuite
 
 ```bash
 $ python -m unittest discover -s tests
