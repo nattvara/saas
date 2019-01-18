@@ -398,3 +398,9 @@ Under some circumstances, a fatal crash for instance, the mounted filesystem mig
 ```bash
 umount path/to/mounted_directory
 ```
+
+## License
+
+MIT © Ludwig Kristoffersson
+
+See [LICENSE file](LICENSE) for more information
