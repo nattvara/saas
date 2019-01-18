@@ -339,7 +339,7 @@ $ tree ~/.saas-data-dir/
 
 ### Firefox extensions
 
-The camera module uses selenium to render pages. To improve performance saas uses [uBlock Origin](https://github.com/gorhill/uBlock) to block ads. To have greater access to more webpages saas uses [I don't care about cookies](https://www.i-dont-care-about-cookies.eu/) to bypass popups and GDPR concent forms. Many websites also employ the practice of paywalls for some of their content, however, many websites leave their site open to users comming from search engines and social media sites. Saas therfore has a small custom [firefox extension](extensions/referer_header) to rewrite all http requests made from firefox to include the header `Referer: https://google.com` - this will allow access to a lot more content on the web.
+The camera module uses selenium to render pages. To improve performance saas uses [uBlock Origin](https://github.com/gorhill/uBlock) to block ads. To have greater access to more webpages saas uses [I don't care about cookies](https://www.i-dont-care-about-cookies.eu/) to bypass popups and GDPR consent forms. Many websites also employ the practice of paywalls for some of their content, however, many websites leave their site open to users coming from search engines and social media sites. Saas therefore has a small custom [firefox extension](extensions/referer_header) to rewrite all http requests made from firefox to include the header `Referer: https://google.com` - this will allow access to a lot more content on the web.
 
 #### Updating uBlock Origin
 
