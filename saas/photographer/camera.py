@@ -188,7 +188,7 @@ class Camera:
         self.height = height
         self.webdriver.set_window_size(width, height)
 
-    def _execute_script(self, script: str, retry: int=20):
+    def _execute_script(self, script: str, retry: int=40):
         """Execute script in browser.
 
         Args:
@@ -203,7 +203,7 @@ class Camera:
         except JavascriptException as e:
             if retry < 1:
                 raise e
-            time.sleep(0.25)
+            time.sleep(0.75)
             return self._execute_script(script, retry - 1)
 
     def _document_height(self) -> int:
