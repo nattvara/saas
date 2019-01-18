@@ -153,7 +153,7 @@ class Camera:
         concent forms.
         """
         self.webdriver.install_addon(Addons.REFERER_HEADER, temporary=True)
-        self.webdriver.install_addon(Addons.IDCAC, temporary=True)
+        self.webdriver.install_addon(Addons.IDCAC)
         self.webdriver.install_addon(Addons.UBLOCK_ORIGIN, temporary=True)
 
     def _route(self, url: Url):
