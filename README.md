@@ -410,6 +410,8 @@ Those are two out of a hundred ways to integrate/extend saas.
 
 Saas is designed to run over multiple machines. There can be virtually unlimited number of saas-nodes added to a single cluster, the only two things they need is a common elasticsearch instance or cluster to talk to, and a common data directory. Elasticsearch is well known for its scalability and the data directory could for instance be a network drive they share, Amazon EFS or any other way to share a drive between machines.
 
+Since all nodes in a cluster share the same index and data directory they can all read the images the cluster as a whole produces. Nodes can also join and leave the cluster freely without incurring any long time data loss.
+
 The biggest hit to performance are taking photos of image-heavy sites or using a large viewport size. Fixed viewport size is a good option for optimizing performance, there is virtually no upper limit to how large a website can be vertically. Screenshots of tabloid websites or sites with infinite-scroll can easily reach 25-50 MB in size.
 
 Checkout the guide [Maximize saas throughput](docs/maximize_throughput_guide.md) for a thorough guide for how to deploy a large cluster of saas nodes on AWS and optimize performance.
