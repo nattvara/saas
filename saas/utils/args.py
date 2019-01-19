@@ -152,4 +152,15 @@ def get_argument_parser():
         ''',
     )
 
+    parser.add_argument(
+        '--stop-if-idle',
+        metavar='',
+        type=int,
+        default=0,
+        help='''
+            If greater than 0 saas will stop if it is idle for more
+            than the provided number of minutes
+        ''',
+    )
+
     return parser
