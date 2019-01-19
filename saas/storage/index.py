@@ -12,6 +12,7 @@ from elasticsearch.helpers import bulk
 import saas.utils.console as console
 from saas.web.url import Url, UrlId
 import saas.mount.file as file
+from typing import Type
 import urllib.request
 import random
 import time
@@ -113,7 +114,8 @@ class Index:
                 }
             }
         })
-        return res['hits']['total']
+        throughput = res['hits']['total']  # type: int
+        return throughput
 
     def add_crawled_url(self, url: Url):
         """Add crawled url.
@@ -132,7 +134,7 @@ class Index:
         prepared = self._prepare_urls(urls, 'crawled')
         bulk(self.es, prepared, request_timeout=80)
 
-    def add_uncrawled_urls(self, urls: Url):
+    def add_uncrawled_urls(self, urls: list):
         """Add uncrawled urls.
 
         Args:
@@ -329,7 +331,8 @@ class Index:
             ]
         })
 
-        return res['hits']['total']
+        count = res['hits']['total']  # type: int
+        return count
 
     def remove_uncrawled_url(self, id: str):
         """Remove url from uncrawled index.
@@ -358,7 +361,7 @@ class Index:
             }
         )
 
-    def lock_crawled_url(self, url: Url, refresh_rate: RefreshRate):
+    def lock_crawled_url(self, url: Url, refresh_rate: Type[RefreshRate]):
         """Lock a crawld url.
 
         Place a lock on a crawled url for a given refresh rate.
@@ -405,7 +408,7 @@ class Index:
             }
         )
 
-    def photos_unique_domains(self, refresh_rate: RefreshRate) -> list:
+    def photos_unique_domains(self, refresh_rate: Type[RefreshRate]) -> list:
         """Get unique domains that pictures have been taken of.
 
         Args:
@@ -438,7 +441,7 @@ class Index:
     def photos_unique_captures_of_domain(
         self,
         domain: str,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> list:
         """Get unique captures for a domain.
 
@@ -480,7 +483,7 @@ class Index:
     def photos_most_recent_capture_of_domain(
         self,
         domain: str,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> str:
         """Get most recently captured_at value of domain.
 
@@ -526,14 +529,16 @@ class Index:
                 f'no capture for given refresh rate and {domain} was found'
             )
 
-        return res['hits']['hits'][0]['_source']['captured_at']
+        doc = res['hits']['hits'][0]  # type: dict
+        captured_at = doc['_source']['captured_at']  # type: str
+        return captured_at
 
     def photos_get_photo(
         self,
         domain: str,
         captured_at: str,
         full_filename: str,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> Photo:
         """Get photo from photos index.
 
@@ -601,6 +606,10 @@ class Index:
 
         res = res['hits']['hits'][0]
         uuid = res['_id']
+
+        if self.datadir is None:
+            raise Exception('Cannot get photo from Index without a data dir')
+
         path = PhotoPath(self.datadir, uuid=uuid)
 
         photo = Screenshot(
@@ -617,7 +626,7 @@ class Index:
         domain: str,
         captured_at: str,
         full_filename: str,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ):
         """Check if photo exists in photos index.
 
@@ -655,7 +664,7 @@ class Index:
         domain: str,
         captured_at: str,
         directory: str,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> bool:
         """Check if directory exists in photos index.
 
@@ -721,7 +730,7 @@ class Index:
         domain: str,
         captured_at: str,
         directory: str,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> list:
         """List photos in a directory.
 
@@ -784,7 +793,7 @@ class Index:
         domain: str,
         captured_at: str,
         directory: str,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> list:
         """List directories in a directory.
 
@@ -840,7 +849,7 @@ class Index:
                 }
             }
         })
-        directories = []
+        directories = []  # type: list
         for bucket in res['aggregations']['photos']['buckets']:
             # trim the parent directories from the path,
             # and strip it's child directories

@@ -34,6 +34,7 @@ class Crawler:
         """
         self.source_is_open = False
         self.source_path = ''
+        self.source_mode = ''
         self._open_source('r', url_file)
         self.ignore_found_urls = ignore_found_urls
         self.stay_at_domain = stay_at_domain
