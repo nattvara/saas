@@ -20,6 +20,11 @@ setup(
         'fusepy==3.0.*',
         'psutil==4.3.*',
     ],
+    data_files=[('extensions', [
+        'extensions/idcac_2.9.5.xpi',
+        'extensions/referer_header.xpi',
+        'extensions/uBlock0_1.17.7rc0.xpi',
+    ])],
     entry_points={
         'console_scripts': [
             'saas = saas.saas:main'
