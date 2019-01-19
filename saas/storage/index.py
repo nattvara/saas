@@ -134,6 +134,40 @@ class Index:
         prepared = self._prepare_urls(urls, 'crawled')
         bulk(self.es, prepared, request_timeout=80)
 
+    def timestamp_of_most_recent_document(self, index: str) -> int:
+        """Get timestamp of most recent document in given index.
+
+        Args:
+            index: the index the most recent document should be in
+
+        Returns:
+            Timestamp of most recent document in given index
+            int
+
+        Raises:
+            EmptySearchResultException: if index is empty
+        """
+        res = self.es.search(index=index, size=1, body={
+            'query': {
+                'match_all': {}
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ],
+            '_source': ['timestamp']
+        })
+
+        if res['hits']['total'] == 0:
+            raise EmptySearchResultException('index is empty')
+
+        doc = res['hits']['hits'][0]  # type: dict
+        timestamp = doc['_source']['timestamp']  # type: int
+        return timestamp
+
     def add_uncrawled_urls(self, urls: list):
         """Add uncrawled urls.
 
@@ -239,7 +273,7 @@ class Index:
         })
 
         if res['hits']['total'] == 0:
-            raise EmptySearchResultException('if index is empty')
+            raise EmptySearchResultException('uncrawled index is empty')
 
         url = Url.from_string(res['hits']['hits'][0]['_source']['url'])
         return url
