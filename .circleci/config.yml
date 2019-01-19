@@ -25,6 +25,7 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install fuse
+            sudo python3 -m pip install -U mypy
             python3 -m venv venv
             . venv/bin/activate
             python setup.py install
@@ -40,6 +41,12 @@ jobs:
           command: |
             . venv/bin/activate
             python -m unittest discover -s tests
+
+      - run:
+          name: run typechecker
+          command: |
+            . venv/bin/activate
+            mypy saas
 
       - store_artifacts:
           path: test-reports

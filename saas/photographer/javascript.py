@@ -21,6 +21,7 @@ class JavascriptSnippets:
 
     STYLESHEET_COUNT = ''
 
+    @staticmethod
     def load():
         """Load javscript snippets."""
         JavascriptSnippets.DOCUMENT_HEIGHT = JavascriptSnippets._load_snippet(
@@ -55,8 +56,8 @@ class JavascriptSnippets:
             The content of the script file
             str
         """
-        file = f'{dirname(__file__)}/js/{filename}'
-        file = open(file, 'r')
+        fullpath = f'{dirname(__file__)}/js/{filename}'
+        file = open(fullpath, 'r')
         script = file.read()
         file.close()
         return script

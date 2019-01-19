@@ -5,12 +5,13 @@ from saas.mount.file import Path, Directory, File, LastCapture
 from saas.storage.index import Index, PhotoNotFoundException
 from saas.storage.refresh import RefreshRate
 from saas.utils.files import real_path
+from typing import Type, Generator
 from fuse import FUSE, Operations
 import errno
 import os
 
 
-def mount(mountpoint: str, index: Index, refresh_rate: RefreshRate):
+def mount(mountpoint: str, index: Index, refresh_rate: Type[RefreshRate]):
     """Mount filesystem.
 
     Mount filesystem at given path.
@@ -37,7 +38,7 @@ class Filesystem(Operations):
 
     ROOT_PATH = '/'
 
-    def __init__(self, index: Index, refresh_rate: RefreshRate):
+    def __init__(self, index: Index, refresh_rate: Type[RefreshRate]):
         """Create new filesystem.
 
         Args:
@@ -70,7 +71,7 @@ class Filesystem(Operations):
             pass
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
 
-    def readdir(self, path: str, fh: int) -> str:
+    def readdir(self, path: str, fh: int) -> Generator:
         """Read directory.
 
         List directory contents.
@@ -111,7 +112,7 @@ class Filesystem(Operations):
         """
         os.close(fh)
 
-    def read(self, path: str, length: int, offset: int, fh: int) -> str:
+    def read(self, path: str, length: int, offset: int, fh: int) -> bytes:
         """Read from file.
 
         Args:
@@ -122,7 +123,7 @@ class Filesystem(Operations):
 
         Returns:
             Contents of file
-            str
+            bytes
         """
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
@@ -163,36 +164,38 @@ class Filesystem(Operations):
         if path == Filesystem.ROOT_PATH:
             return Directory.attributes()
 
-        path = Path(path)
+        parsed = Path(path)
 
-        if path.includes_domain() and not path.includes_captured_at():
+        if parsed.includes_domain() and not parsed.includes_captured_at():
             domains = self.index.photos_unique_domains(self.refresh_rate)
-            if path.domain not in domains:
-                raise FileNotFoundError(f'Unkown domain: {path.domain}')
+            if parsed.domain not in domains:
+                raise FileNotFoundError(f'Unkown domain: {parsed.domain}')
             return Directory.attributes()
 
-        if path.includes_captured_at() and not path.includes_end():
+        if parsed.includes_captured_at() and not parsed.includes_end():
             captures = self.index.photos_unique_captures_of_domain(
-                path.domain,
+                parsed.domain,
                 self.refresh_rate
             )
             captures.append(LastCapture.FILENAME)
-            if path.captured_at not in captures:
-                raise FileNotFoundError(f'Unkown capture: {path.captured_at}')
+            if parsed.captured_at not in captures:
+                raise FileNotFoundError(
+                    f'Unkown capture: {parsed.captured_at}'
+                )
             return Directory.attributes()
 
         if self.index.photos_directory_exists(
-            domain=path.domain,
-            captured_at=path.captured_at,
-            directory=path.end_as_directory(),
+            domain=parsed.domain,
+            captured_at=parsed.captured_at,
+            directory=parsed.end_as_directory(),
             refresh_rate=self.refresh_rate
         ):
             return Directory.attributes()
 
         file_exists = self.index.photos_file_exists(
-            domain=path.domain,
-            captured_at=path.captured_at,
-            full_filename=path.end_as_file(),
+            domain=parsed.domain,
+            captured_at=parsed.captured_at,
+            full_filename=parsed.end_as_file(),
             refresh_rate=self.refresh_rate
         )
         if file_exists:
@@ -213,15 +216,15 @@ class Filesystem(Operations):
         if path == Filesystem.ROOT_PATH:
             return self._list_root()
 
-        path = Path(path)
+        parsed = Path(path)
 
-        if not path.includes_captured_at():
-            return self._list_unique_captures(path.domain)
+        if not parsed.includes_captured_at():
+            return self._list_unique_captures(parsed.domain)
 
         return self._list_directory(
-            path.domain,
-            path.captured_at,
-            path.end_as_directory()
+            parsed.domain,
+            parsed.captured_at,
+            parsed.end_as_directory()
         )
 
     def _list_root(self) -> list:
@@ -324,20 +327,20 @@ class Filesystem(Operations):
         Raises:
             FileNotFoundError: If file at given path does not exist
         """
-        path = Path(path)
+        parsed = Path(path)
         exists = self.index.photos_file_exists(
-            domain=path.domain,
-            captured_at=path.captured_at,
-            full_filename=path.end_as_file(),
+            domain=parsed.domain,
+            captured_at=parsed.captured_at,
+            full_filename=parsed.end_as_file(),
             refresh_rate=self.refresh_rate
         )
         if not exists:
             raise FileNotFoundError('photo do not exist in index')
 
         photo = self.index.photos_get_photo(
-            domain=path.domain,
-            captured_at=path.captured_at,
-            full_filename=path.end_as_file(),
+            domain=parsed.domain,
+            captured_at=parsed.captured_at,
+            full_filename=parsed.end_as_file(),
             refresh_rate=self.refresh_rate
         )
 

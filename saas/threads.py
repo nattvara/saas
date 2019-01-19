@@ -11,6 +11,7 @@ import saas.utils.console as console
 from saas.storage.index import Index
 import saas.utils.stats as stats
 from threading import Thread
+from typing import Type
 import signal
 import time
 import uuid
@@ -26,10 +27,11 @@ class Controller:
 
     FUSE_PID = None
 
-    threads = {}
+    threads = {}  # type: dict
 
-    webdrivers = []
+    webdrivers = []  # type: list
 
+    @staticmethod
     def start_crawlers(
         amount: int,
         url_file: str,
@@ -67,6 +69,7 @@ class Controller:
             }
             amount -= 1
 
+    @staticmethod
     def start_stats(elasticsearch_host: str):
         """Start stats thread.
 
@@ -76,9 +79,10 @@ class Controller:
         thread = Thread(target=_stats_thread, args=(elasticsearch_host,))
         thread.start()
 
+    @staticmethod
     def start_photographers(
         amount: int,
-        refresh_rate: refresh.RefreshRate,
+        refresh_rate: Type[refresh.RefreshRate],
         datadir: DataDirectory,
         viewport_width: int,
         viewport_height: int,
@@ -117,10 +121,11 @@ class Controller:
             }
             amount -= 1
 
+    @staticmethod
     def start_filesystem(
         mountpoint: str,
         datadir: DataDirectory,
-        refresh_rate: refresh.RefreshRate,
+        refresh_rate: Type[refresh.RefreshRate],
         elasticsearch_host: str
     ):
         """Start filesystem process.
@@ -158,6 +163,7 @@ class Controller:
 
         return False
 
+    @staticmethod
     def stop_all():
         """Stop all threads."""
         try:
@@ -182,6 +188,7 @@ class Controller:
         except KeyboardInterrupt:
             Controller.stop_all()
 
+    @staticmethod
     def _any_thread_is_running() -> bool:
         """Check if any thread is running.
 
@@ -283,7 +290,7 @@ def _stats_thread(elasticsearch_host: str):
 
 
 def _photographer_thread(
-    refresh_rate: refresh.RefreshRate,
+    refresh_rate: Type[refresh.RefreshRate],
     datadir: DataDirectory,
     viewport_width: int,
     viewport_height: int,

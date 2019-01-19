@@ -359,8 +359,20 @@ zip -r -j -FS extensions/referer_header.xpi extensions/referer_header/*
 
 ### Run the testsuite
 
-```bash
+```console
+$ python3 -m venv ./venv
+
+$ source ./venv/bin/activate
+
+$ python setup.py develop
+
 $ python -m unittest discover -s tests
+```
+
+### Run the typechecker
+
+```console
+$ mypy saas
 ```
 
 <p id="api"></p>

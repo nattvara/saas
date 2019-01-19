@@ -15,6 +15,7 @@ class Browser:
     from urls.
     """
 
+    @staticmethod
     def get_page(url: Url) -> Page:
         """Get page.
 
@@ -37,7 +38,11 @@ class Browser:
             return page
 
         page.status_code = response.getcode()
-        page.content_type = response.info().get_content_type().strip()
+        headers = dict(response.headers)
+        for header in headers:
+            if header.lower() == 'content-type':
+                page.content_type = headers[header]
+
         links = parser.parse(str(html))
 
         for link in links:
@@ -64,7 +69,7 @@ class LinkParser(HTMLParser):
             List of the found links
             list
         """
-        self.links = []
+        self.links = []  # type: list
         self.feed(html)
         return self.links
 

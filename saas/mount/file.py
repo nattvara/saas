@@ -3,6 +3,7 @@
 from __future__ import annotations
 from saas.storage.refresh import RefreshRate
 import saas.storage.index as idx
+from typing import Optional, Type
 import time
 import os
 
@@ -43,8 +44,8 @@ class Path:
             A domain name
             str
         """
-        path = path.split('/')
-        return path[1]
+        pieces = path.split('/')
+        return pieces[1]
 
     def _parse_captured_at(self, path: str) -> str:
         """Parse captured_at from path.
@@ -56,9 +57,9 @@ class Path:
             A captured_at value (see refresh module)
             str
         """
-        path = path.split('/')
-        if len(path) >= 3:
-            return path[2]
+        pieces = path.split('/')
+        if len(pieces) >= 3:
+            return pieces[2]
         return ''
 
     def _parse_end(self, path: str) -> str:
@@ -72,10 +73,10 @@ class Path:
                 captured_at
             str
         """
-        path = path.split('/')
-        path = path[3:]
-        path = '/' + '/'.join(path)
-        if len(path) > 1:
+        pieces = path.split('/')
+        piece = pieces[3:]
+        path = '/' + '/'.join(piece)
+        if len(piece) > 1:
             path = path.rstrip('/')
         return path
 
@@ -150,7 +151,7 @@ class Directory:
 
     ST_MODE = 0o40755
 
-    TIME = 0
+    TIME = 0.0
 
     def __init__(self, filename: str):
         """Create new directory.
@@ -160,10 +161,10 @@ class Directory:
         """
         self.filename = filename
         self.st_mode = Directory.ST_MODE  # Permissions
-        if Directory.TIME == 0:
+        if Directory.TIME == 0.0:
             Directory.TIME = time.time()
 
-    def attributes(self=None) -> dict:
+    def attributes(self: Optional['Directory']=None) -> dict:
         """Get attributes of file.
 
         Args:
@@ -189,7 +190,7 @@ class File:
 
     ST_MODE = 0o100644
 
-    TIME = 0
+    TIME = 0.0
 
     def __init__(self, filename: str):
         """Create new file.
@@ -199,10 +200,10 @@ class File:
         """
         self.filename = filename
         self.st_mode = File.ST_MODE  # Permissions
-        if File.TIME == 0:
+        if File.TIME == 0.0:
             File.TIME = time.time()
 
-    def attributes(self=None, filesize: int=0) -> dict:
+    def attributes(self: Optional['File']=None, filesize: int=0) -> dict:
         """Get attributes of file.
 
         Args:
@@ -236,15 +237,16 @@ class LastCapture:
 
     CACHE_AGE_LIMIT = 60
 
-    captures = {}
+    captures = {}  # type: dict
 
-    cached_at = {}
+    cached_at = {}  # type: dict
 
+    @staticmethod
     def translate(
         captured_at: str,
         domain: str,
         index: idx.Index,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> str:
         """Translate captured_at to cached value.
 
@@ -272,6 +274,7 @@ class LastCapture:
             pass
         return captured_at
 
+    @staticmethod
     def _from_cache(domain: str) -> str:
         """Get last capture of domain from cache.
 
@@ -282,8 +285,10 @@ class LastCapture:
             Last captured_at value
             str
         """
-        return LastCapture.captures[domain]
+        captured_at = LastCapture.captures[domain]  # type: str
+        return captured_at
 
+    @staticmethod
     def _is_cached(domain: str) -> bool:
         """Check if last capture has a valid cache.
 
@@ -304,7 +309,12 @@ class LastCapture:
 
         return True
 
-    def _update(domain: str, index: idx.Index, refresh_rate: RefreshRate):
+    @staticmethod
+    def _update(
+        domain: str,
+        index: idx.Index,
+        refresh_rate: Type[RefreshRate]
+    ):
         """Update cache.
 
         Args:

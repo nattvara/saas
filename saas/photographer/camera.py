@@ -11,6 +11,7 @@ from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
 from os.path import dirname
+from typing import Type
 import time
 import os
 
@@ -27,7 +28,7 @@ class Camera:
                 will try to take a full height high quality screenshot,
                 which is way slower than fixed size (default: {0})
         """
-        self.webdriver = None
+        self.webdriver = None  # type: webdriver.FirefoxProfile
         self.width = 0
         self.height = 0
         self.viewport_width = viewport_width
@@ -36,7 +37,7 @@ class Camera:
     def take_picture(
         self, url: Url,
         path: PhotoPath,
-        refresh_rate: RefreshRate
+        refresh_rate: Type[RefreshRate]
     ) -> Screenshot:
         """Take picture of url.
 
@@ -83,7 +84,7 @@ class Camera:
                 # scroll down the page to trigger load of images
                 steps = 2 * int(self._document_height() / self.height)
                 for i in range(1, steps):
-                    self._scroll_y_axis((self.height / 2) * i)
+                    self._scroll_y_axis(int((self.height / 2) * i))
                     self._wait_for_images_to_load()
 
                 # resize the viewport and make sure that it's scrolled
@@ -106,6 +107,10 @@ class Camera:
             pass
         finally:
             if self.webdriver:
+
+                # fixes bug where webdriver would never quit
+                self._stop_webdriver_service_process()
+
                 self.webdriver.quit()
 
         return Screenshot(
@@ -155,6 +160,42 @@ class Camera:
         self.webdriver.install_addon(Addons.REFERER_HEADER, temporary=True)
         self.webdriver.install_addon(Addons.IDCAC)
         self.webdriver.install_addon(Addons.UBLOCK_ORIGIN, temporary=True)
+
+    def _stop_webdriver_service_process(self):
+        """Stop seleniums "service" process.
+
+        The "stop" method in the module selenium.webdriver.common.service
+        has a call to process.wait(), which for some reason seems to wait
+        indefinitely and prevent camera from ever exiting take_photo().
+
+        Terminating the process here instead, will prevent the service
+        from calling process.wait() and hanging the entire camera.
+        """
+        try:
+            self.webdriver.service.send_remote_shutdown_command()
+        except TypeError:
+            pass
+
+        try:
+            for stream in [
+                self.webdriver.service.process.stdin,
+                self.webdriver.service.process.stdout,
+                self.webdriver.service.process.stderr
+            ]:
+                try:
+                    stream.close()
+                except AttributeError:
+                    pass
+            self.webdriver.service.process.terminate()
+
+            # this is the call that causes the webdriver to never
+            # finish quitting
+            # self.webdriver.service.process.wait()
+
+            self.webdriver.service.process.kill()
+            self.webdriver.service.process = None
+        except OSError:
+            pass
 
     def _route(self, url: Url):
         """Route camera to url.
@@ -213,9 +254,10 @@ class Camera:
             The height of the document at the page routed to
             int
         """
-        return self._execute_script(
+        height = self._execute_script(
             JavascriptSnippets.DOCUMENT_HEIGHT
-        )
+        )  # type: int
+        return height
 
     def _image_count(self) -> int:
         """Get number of images on page.
@@ -224,9 +266,10 @@ class Camera:
             The number of images the webpage has requested
             int
         """
-        return self._execute_script(
+        images = self._execute_script(
             JavascriptSnippets.IMAGE_COUNT
-        )
+        )  # type: int
+        return images
 
     def _script_count(self) -> int:
         """Get number of scripts page uses.
@@ -235,9 +278,10 @@ class Camera:
             The number of scripts the page has requested
             int
         """
-        return self._execute_script(
+        scripts = self._execute_script(
             JavascriptSnippets.SCRIPT_COUNT
-        )
+        )  # type: int
+        return scripts
 
     def _stylesheet_count(self) -> int:
         """Get number of stylesheets page uses.
@@ -246,9 +290,10 @@ class Camera:
             The number of stylesheets the page has requested
             int
         """
-        return self._execute_script(
+        stylesheets = self._execute_script(
             JavascriptSnippets.STYLESHEET_COUNT
-        )
+        )  # type: int
+        return stylesheets
 
     def _scroll_y_axis(self, pixels: int):
         """Scroll page on the y axis.

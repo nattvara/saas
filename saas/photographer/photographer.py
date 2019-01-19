@@ -10,6 +10,7 @@ import saas.utils.console as console
 from saas.storage.index import Index
 import saas.threads as threads
 from saas.web.url import Url
+from typing import Type
 import random
 import time
 
@@ -20,7 +21,7 @@ class Photographer:
     def __init__(
         self,
         index: Index,
-        refresh_rate: refresh.RefreshRate,
+        refresh_rate: Type[refresh.RefreshRate],
         datadir: DataDirectory,
         viewport_width: int=1920,
         viewport_height: int=0,
@@ -98,6 +99,6 @@ class Photographer:
             # to take photographs of are small
             time.sleep(round(random.uniform(10, 0), 2))
 
-        url = self.index.recently_crawled_url(self.refresh_rate)
+        url = self.index.recently_crawled_url(self.refresh_rate)  # type: Url
         self.index.lock_crawled_url(url, self.refresh_rate)
         return url
