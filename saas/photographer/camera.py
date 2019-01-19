@@ -3,12 +3,14 @@
 from __future__ import annotations
 from urllib3.exceptions import ProtocolError, MaxRetryError
 from saas.photographer.javascript import JavascriptSnippets
+from selenium.common.exceptions import JavascriptException
 from saas.photographer.photo import PhotoPath, Screenshot
 from saas.storage.refresh import RefreshRate
 from http.client import RemoteDisconnected
 from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
+from os.path import dirname
 import time
 import os
 
@@ -58,9 +60,13 @@ class Camera:
                 profile,
                 UserAgents.GOOGLEBOT
             )
+            self._install_webdriver_addons()
+
             threads.Controller.webdrivers.append(
                 self.webdriver.service.process.pid
             )
+
+            self._route_to_blank()
             self._route(url)
 
             if self.viewport_height != 0:
@@ -72,6 +78,7 @@ class Camera:
                 # fullpage screenshot
                 self._set_resolution(self.viewport_width, 1080)
                 self._start_images_monitor()
+                self._wait_for_images_to_load()
 
                 # scroll down the page to trigger load of images
                 steps = 2 * int(self._document_height() / self.height)
@@ -135,7 +142,19 @@ class Camera:
         profile.set_preference('general.useragent.override', user_agent)
         profile.set_preference('dom.popup_maximum', 0)
         profile.set_preference('privacy.popups.showBrowserMessage', False)
+        profile.set_preference('dom.push.enabled', False)
         return webdriver.Firefox()
+
+    def _install_webdriver_addons(self):
+        """Install webdriver addons.
+
+        The extensions that are installed either improve rendering
+        performance. Or let firefox bypass paywalls or cookie/GDPR
+        concent forms.
+        """
+        self.webdriver.install_addon(Addons.REFERER_HEADER, temporary=True)
+        self.webdriver.install_addon(Addons.IDCAC)
+        self.webdriver.install_addon(Addons.UBLOCK_ORIGIN, temporary=True)
 
     def _route(self, url: Url):
         """Route camera to url.
@@ -144,6 +163,10 @@ class Camera:
             url: A Url to route camera to
         """
         self.webdriver.get(url.to_string())
+
+    def _route_to_blank(self):
+        """Route to blank page."""
+        self.webdriver.get('about:blank')
 
     def _save(self, path: PhotoPath):
         """Save screen shot.
@@ -165,6 +188,24 @@ class Camera:
         self.height = height
         self.webdriver.set_window_size(width, height)
 
+    def _execute_script(self, script: str, retry: int=40):
+        """Execute script in browser.
+
+        Args:
+            script: javascript to execute
+            retry: number of times script can fail and retry
+
+        Returns:
+            Result of script
+        """
+        try:
+            return self.webdriver.execute_script(script)
+        except JavascriptException as e:
+            if retry < 1:
+                raise e
+            time.sleep(0.75)
+            return self._execute_script(script, retry - 1)
+
     def _document_height(self) -> int:
         """Get document height from webdriver.
 
@@ -172,7 +213,7 @@ class Camera:
             The height of the document at the page routed to
             int
         """
-        return self.webdriver.execute_script(
+        return self._execute_script(
             JavascriptSnippets.DOCUMENT_HEIGHT
         )
 
@@ -183,7 +224,7 @@ class Camera:
             The number of images the webpage has requested
             int
         """
-        return self.webdriver.execute_script(
+        return self._execute_script(
             JavascriptSnippets.IMAGE_COUNT
         )
 
@@ -194,7 +235,7 @@ class Camera:
             The number of scripts the page has requested
             int
         """
-        return self.webdriver.execute_script(
+        return self._execute_script(
             JavascriptSnippets.SCRIPT_COUNT
         )
 
@@ -205,7 +246,7 @@ class Camera:
             The number of stylesheets the page has requested
             int
         """
-        return self.webdriver.execute_script(
+        return self._execute_script(
             JavascriptSnippets.STYLESHEET_COUNT
         )
 
@@ -215,22 +256,30 @@ class Camera:
         Args:
             pixels: The number of pixels to scroll vertically
         """
-        self.webdriver.execute_script(
+        self._execute_script(
             JavascriptSnippets.SCROLL_Y_AXIS.replace('Y_PIXELS', str(pixels))
         )
 
     def _start_images_monitor(self):
         """Start images monitor script on page."""
-        self.webdriver.execute_script(
+        self._execute_script(
             JavascriptSnippets.IMAGES_MONITOR
         )
 
     def _wait_for_images_to_load(self):
         """Wait for all images to load on page."""
-        while self.webdriver.execute_script(
+        while self._execute_script(
             JavascriptSnippets.IMAGES_LOADED
-        ) < Limits.ALL_IMAGES_LOADED:
+        ) is None:
             time.sleep(Limits.SLEEP_BETWEEN_IMAGE_LOAD_CHECK)
+
+        try:
+            while self._execute_script(
+                JavascriptSnippets.IMAGES_LOADED
+            ) < Limits.ALL_IMAGES_LOADED:
+                time.sleep(Limits.SLEEP_BETWEEN_IMAGE_LOAD_CHECK)
+        except TypeError:
+            self._start_images_monitor()
 
     def _wait_for_resize(self):
         """Wait for resoultion resize to be completed.
@@ -286,6 +335,18 @@ class Camera:
         while score > 0:
             time.sleep(Limits.RESIZE_WAIT_TIME)
             score -= 1
+
+
+class Addons:
+    """Firefox addons."""
+
+    REFERER_HEADER = f'{dirname(__file__)}/../../extensions/referer_header.xpi'
+
+    # https://github.com/gorhill/uBlock/releases
+    UBLOCK_ORIGIN = f'{dirname(__file__)}/../../extensions/uBlock0_1.17.7rc0.xpi'
+
+    # https://www.i-dont-care-about-cookies.eu/
+    IDCAC = f'{dirname(__file__)}/../../extensions/idcac_2.9.5.xpi'
 
 
 class Limits:

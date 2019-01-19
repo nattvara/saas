@@ -244,7 +244,7 @@ By default the camera tries to take a full screen screenshot. This means that it
 ### Full list of options
 
 ```
-usage: saas [-h] [--version] [--refresh-rate] [--crawler-threads]
+usage: saas [-h] [--version] [--debug] [--refresh-rate] [--crawler-threads]
             [--photographer-threads] [--data-dir] [--clear-data-dir]
             [--elasticsearch-host] [--setup-elasticsearch]
             [--clear-elasticsearch] [--stay-at-domain] [--ignore-found-urls]
@@ -260,6 +260,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
+  --debug               Display debugging information
   --refresh-rate        Refresh captures of urls every 'day', 'hour' or
                         'minute' (default: hour)
   --crawler-threads     Number of crawler threads, usually not neccessary with
@@ -334,7 +335,29 @@ $ tree ~/.saas-data-dir/
     └── d8ed2aab-ab70-4dfe-a600-143878916063.png
 ```
 
-## Run the testsuite
+## Build
+
+### Firefox extensions
+
+The camera module uses selenium to render pages. To improve performance saas uses [uBlock Origin](https://github.com/gorhill/uBlock) to block ads. To have greater access to more webpages saas uses [I don't care about cookies](https://www.i-dont-care-about-cookies.eu/) to bypass popups and GDPR consent forms. Many websites also employ the practice of paywalls for some of their content, however, many websites leave their site open to users coming from search engines and social media sites. Saas therefore has a small custom [firefox extension](extensions/referer_header) to rewrite all http requests made from firefox to include the header `Referer: https://google.com` - this will allow access to a lot more content on the web.
+
+#### Updating uBlock Origin
+
+Download the latest ublock.xpi from [gorhill/uBlock releases](https://github.com/gorhill/uBlock/releases) and replace the version in the `extensions/` directory.
+
+#### Updating IDCAC
+
+Download and install the latest version using firefox from [https://www.i-dont-care-about-cookies.eu/](https://www.i-dont-care-about-cookies.eu/). Locate the `.xpi` file inside Firefox's extensions directory, on macOS this is `~/Library/Application Support/Firefox/Profiles/[profile]/extensions/`. Copy the `.xpi` file to the `extensions/` directory.
+
+#### Referer Header
+
+Make zip archive of source files
+
+```bash
+zip -r -j -FS extensions/referer_header.xpi extensions/referer_header/*
+```
+
+### Run the testsuite
 
 ```bash
 $ python -m unittest discover -s tests
@@ -386,6 +409,8 @@ Those are two out of a hundred ways to integrate/extend saas.
 ## Performance and Scalability
 
 Saas is designed to run over multiple machines. There can be virtually unlimited number of saas-nodes added to a single cluster, the only two things they need is a common elasticsearch instance or cluster to talk to, and a common data directory. Elasticsearch is well known for its scalability and the data directory could for instance be a network drive they share, Amazon EFS or any other way to share a drive between machines.
+
+Since all nodes in a cluster share the same index and data directory they can all read the images the cluster as a whole produces. Nodes can also join and leave the cluster freely without incurring any long time data loss.
 
 The biggest hit to performance are taking photos of image-heavy sites or using a large viewport size. Fixed viewport size is a good option for optimizing performance, there is virtually no upper limit to how large a website can be vertically. Screenshots of tabloid websites or sites with infinite-scroll can easily reach 25-50 MB in size.
 

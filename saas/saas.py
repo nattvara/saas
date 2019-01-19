@@ -60,7 +60,8 @@ def main():
             url_file=args.url_file,
             ignore_found_urls=args.ignore_found_urls,
             stay_at_domain=args.stay_at_domain,
-            elasticsearch_host=args.elasticsearch_host
+            elasticsearch_host=args.elasticsearch_host,
+            debug=args.debug
         )
 
         Controller.start_photographers(
@@ -69,7 +70,8 @@ def main():
             datadir=DataDirectory(args.data_dir),
             viewport_width=args.viewport_width,
             viewport_height=args.viewport_height,
-            elasticsearch_host=args.elasticsearch_host
+            elasticsearch_host=args.elasticsearch_host,
+            debug=args.debug
         )
 
         while True:
