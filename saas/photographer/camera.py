@@ -90,9 +90,9 @@ class Camera:
                 self._wait_for_images_to_load()
 
                 # scroll down the page to trigger load of images
-                steps = int(self._document_height() / 1080)
+                steps = int(self._document_height() / 800)
                 for i in range(1, steps):
-                    scroll_to = i * 1080
+                    scroll_to = i * 800
                     if self.viewport_max_height is not None:
                         if scroll_to >= self.viewport_max_height:
                             break
