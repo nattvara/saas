@@ -21,7 +21,7 @@ FUSE is used to mount a synthetic filesystem to read back the photos taken of th
 
 #### Elasticsearch
 
-Elasticsearch is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
+[Elasticsearch](https://www.elastic.co/products/elasticsearch) is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
 
 #### ImageMagick
 
