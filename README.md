@@ -248,7 +248,8 @@ usage: saas [-h] [--version] [--debug] [--refresh-rate] [--crawler-threads]
             [--photographer-threads] [--data-dir] [--clear-data-dir]
             [--elasticsearch-host] [--setup-elasticsearch]
             [--clear-elasticsearch] [--stay-at-domain] [--ignore-found-urls]
-            [--viewport-width] [--viewport-height]
+            [--viewport-width] [--viewport-height] [--viewport-max-height]
+            [--stop-if-idle]
             url_file mountpoint
 
 Screenshot as a service
@@ -282,10 +283,16 @@ optional arguments:
   --stay-at-domain      Use flag to ignore urls from a different domain than
                         the one it was found at
   --ignore-found-urls   Use flag to ignore urls found on crawled urls
-  --viewport-width      Width of camera viewport (default: 1920)
-  --viewport-height     Height of camera viewport, if set to 0 camera will try
-                        to take a full height high quality screenshot, which
-                        is way slower than fixed size (default: 0)
+  --viewport-width      Width of camera viewport in pixels (default: 1920)
+  --viewport-height     Height of camera viewport in pixels, if set to 0
+                        camera will try to take a full height high quality
+                        screenshot, which is way slower than fixed size
+                        (default: 0)
+  --viewport-max-height
+                        Max height of camera viewport in pixels, if
+                        --viewport-height is set this will be ignored
+  --stop-if-idle        If greater than 0 saas will stop if it is idle for
+                        more than the provided number of minutes
 ```
 
 <p id="storage"></p>
