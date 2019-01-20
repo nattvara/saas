@@ -23,6 +23,10 @@ FUSE is used to mount a synthetic filesystem to read back the photos taken of th
 
 Elasticsearch is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
 
+#### ImageMagick
+
+[ImageMagick](https://www.imagemagick.org) is used for optimizing image files saved to disk. This is an optional dependency since it is only used when the `--optimize-storage` flag is used.
+
 ### Linux
 
 __1. Install Elasticsearch__ [using docker](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html)
@@ -42,7 +46,13 @@ chmod +x geckodriver
 sudo mv geckodriver /usr/bin/
 ```
 
-__3. Install saas__
+__3. Install ImageMagick (optional)__
+
+```bash
+sudo apt-get install imagemagick
+```
+
+__4. Install saas__
 
 ```bash
 git clone https://github.com/nattvara/saas.git && cd saas
@@ -97,7 +107,13 @@ python3 --version
 # Python 3.7.2
 ```
 
-__6. Install saas__
+__6. Install ImageMagick (optional)__
+
+```bash
+brew install imagemagick
+```
+
+__7. Install saas__
 
 ```bash
 git clone https://github.com/nattvara/saas.git && cd saas
@@ -245,7 +261,7 @@ usage: saas [-h] [--version] [--debug] [--refresh-rate] [--crawler-threads]
             [--elasticsearch-host] [--setup-elasticsearch]
             [--clear-elasticsearch] [--stay-at-domain] [--ignore-found-urls]
             [--viewport-width] [--viewport-height] [--viewport-max-height]
-            [--stop-if-idle]
+            [--optimize-storage] [--stop-if-idle]
             url_file mountpoint
 
 Screenshot as a service
@@ -287,6 +303,8 @@ optional arguments:
   --viewport-max-height
                         Max height of camera viewport in pixels, if
                         --viewport-height is set this will be ignored
+  --optimize-storage    Image files should be optimized to take up less
+                        storage (takes longer time to render)
   --stop-if-idle        If greater than 0 saas will stop if it is idle for
                         more than the provided number of minutes
 ```
