@@ -421,6 +421,11 @@ Starting a simple python webserver could allow for traversing the saas filesyste
 ```bash
 # inside mounted filesystem
 python -m SimpleHTTPServer 3001
+
+# so the following url
+# https://www.ft.com/content/180f3428-1923-11e9-b93e-f4351a53f1c3
+# if photographed, could be found at
+wget http://localhost:3001/www.ft.com/latest/content/180f3428-1923-11e9-b93e-f4351a53f1c3.png
 ```
 
 Those are two out of a hundred ways to integrate/extend saas.
@@ -441,7 +446,9 @@ See [examples/](examples/README.md) for some good examples for testing saas.
 
 ## Known issues
 
-Under some circumstances, a fatal crash for instance, the mounted filesystem might not unmount automatically. If this happens, run
+Under some circumstances, a fatal crash for instance, the mounted filesystem might not unmount automatically. Also the filesystem will not be able to unmount if some other process is currently reading from the filesystem.
+
+If you encouter this, run
 
 ```bash
 umount path/to/mounted_directory
