@@ -137,7 +137,7 @@ def get_argument_parser():
         metavar='',
         type=int,
         default=1920,
-        help='Width of camera viewport (default: %(default)s)',
+        help='Width of camera viewport in pixels (default: %(default)s)',
     )
 
     parser.add_argument(
@@ -146,9 +146,19 @@ def get_argument_parser():
         type=int,
         default=0,
         help='''
-            Height of camera viewport, if set to 0 camera will
+            Height of camera viewport in pixels, if set to 0 camera will
             try to take a full height high quality screenshot,
             which is way slower than fixed size (default: %(default)s)
+        ''',
+    )
+
+    parser.add_argument(
+        '--viewport-max-height',
+        metavar='',
+        type=int,
+        help='''
+            Max height of camera viewport in pixels, if --viewport-height
+            is set this will be ignored
         ''',
     )
 

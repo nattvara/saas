@@ -70,6 +70,7 @@ def main():
             datadir=DataDirectory(args.data_dir),
             viewport_width=args.viewport_width,
             viewport_height=args.viewport_height,
+            viewport_max_height=args.viewport_max_height,
             elasticsearch_host=args.elasticsearch_host,
             debug=args.debug
         )
