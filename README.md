@@ -21,10 +21,6 @@ FUSE is used to mount a synthetic filesystem to read back the photos taken of th
 
 #### Elasticsearch
 
-From the [Elasticsearch wikipedia page](https://en.wikipedia.org/wiki/Elasticsearch)
-
-> Elasticsearch is a search engine based on the Lucene library. It provides a distributed, multitenant-capable full-text search engine with an HTTP web interface and schema-free JSON documents.
-
 Elasticsearch is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
 
 ### Linux
