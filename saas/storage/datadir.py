@@ -43,7 +43,8 @@ class DataDirectory:
             str
         """
         first_char = photo_path.uuid[0]
-        directory = self.root + '/' + first_char + '/'
+        second_char = photo_path.uuid[1]
+        directory = self.root + '/' + first_char + second_char + '/'
         if not os.path.exists(directory):
             os.mkdir(directory)
         return directory + photo_path.uuid + '.png'
