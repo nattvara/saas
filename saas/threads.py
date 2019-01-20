@@ -9,9 +9,9 @@ from saas.utils.files import real_path
 import saas.storage.refresh as refresh
 import saas.utils.console as console
 from saas.storage.index import Index
+from typing import Type, Optional
 import saas.utils.stats as stats
 from threading import Thread
-from typing import Type
 import signal
 import time
 import uuid
@@ -86,6 +86,7 @@ class Controller:
         datadir: DataDirectory,
         viewport_width: int,
         viewport_height: int,
+        viewport_max_height: Optional[int],
         elasticsearch_host: str,
         debug: bool
     ):
@@ -99,6 +100,7 @@ class Controller:
             datadir: Data directory to store pictures in
             viewport_width: width of camera viewport
             viewport_height: height of camera viewport
+            viewport_max_height: max height of camera viewport
             elasticsearch_host: elasticsearch host
             debug: Display debugging information
         """
@@ -111,6 +113,7 @@ class Controller:
                 datadir,
                 viewport_width,
                 viewport_height,
+                viewport_max_height,
                 elasticsearch_host,
                 debug,
                 thread_id
@@ -294,6 +297,7 @@ def _photographer_thread(
     datadir: DataDirectory,
     viewport_width: int,
     viewport_height: int,
+    viewport_max_height: Optional[int],
     elasticsearch_host: str,
     debug: bool,
     thread_id: str
@@ -305,6 +309,7 @@ def _photographer_thread(
         datadir: Data directory to store pictures in
         viewport_width: width of camera viewport
         viewport_height: height of camera viewport
+        viewport_max_height: max height of camera viewport
         elasticsearch_host: elasticsearch host
         debug: Display debugging information
         thread_id: id of thread
@@ -315,7 +320,8 @@ def _photographer_thread(
             refresh_rate,
             datadir,
             viewport_width,
-            viewport_height
+            viewport_height,
+            viewport_max_height
         )
         while Controller.SHOULD_RUN:
             photographer.tick()

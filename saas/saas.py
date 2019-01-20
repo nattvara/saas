@@ -1,14 +1,14 @@
 """saas entry point."""
 
+from saas.storage.index import Index, EmptySearchResultException
 from saas.photographer.javascript import JavascriptSnippets
 from saas.storage.datadir import DataDirectory
 import saas.storage.refresh as refresh
 import saas.utils.console as console
-from saas.storage.index import Index
 import saas.utils.args as arguments
 from saas.threads import Controller
-import sys
 import time
+import sys
 
 
 def main():
@@ -70,17 +70,50 @@ def main():
             datadir=DataDirectory(args.data_dir),
             viewport_width=args.viewport_width,
             viewport_height=args.viewport_height,
+            viewport_max_height=args.viewport_max_height,
             elasticsearch_host=args.elasticsearch_host,
             debug=args.debug
         )
 
         while True:
-            time.sleep(10)
 
-    except KeyboardInterrupt:
+            if args.stop_if_idle == 0:
+                time.sleep(10)
+                continue
+
+            try:
+                crawled = index.timestamp_of_most_recent_document(
+                    index.CRAWLED
+                )
+                photos = index.timestamp_of_most_recent_document(
+                    index.PHOTOS
+                )
+
+                timestamp = photos
+                if crawled > timestamp:
+                    timestamp = crawled
+
+                seconds = int(time.time()) - timestamp
+                mins = int(seconds / 60)
+                if mins >= args.stop_if_idle:
+                    console.p(f'was idle for {mins} minutes', end='')
+                    raise StopIfIdleTimeoutExpired
+
+            except EmptySearchResultException:
+                pass
+            finally:
+                time.sleep(2)
+
+    except (KeyboardInterrupt, StopIfIdleTimeoutExpired):
         console.p(' terminating.')
         Controller.stop_all()
         console.p('')
+
+
+class StopIfIdleTimeoutExpired(Exception):
+    """Idle timeout expired."""
+
+    pass
 
 
 if __name__ == '__main__':

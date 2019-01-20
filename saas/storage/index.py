@@ -24,6 +24,12 @@ class Index:
     Wrapper around elasticsearch api
     """
 
+    UNCRAWLED = 'uncrawled'
+
+    CRAWLED = 'crawled'
+
+    PHOTOS = 'photos'
+
     def __init__(
         self,
         datadir: DataDirectory=None,
@@ -74,13 +80,13 @@ class Index:
         """Create indices in elasticsearch."""
         console.p('creating indices')
         try:
-            self.es.indices.create('uncrawled', body={
+            self.es.indices.create(Index.UNCRAWLED, body={
                 'mappings': Mappings.uncrawled
             })
-            self.es.indices.create('crawled', body={
+            self.es.indices.create(Index.CRAWLED, body={
                 'mappings': Mappings.crawled
             })
-            self.es.indices.create('photos', body={
+            self.es.indices.create(Index.PHOTOS, body={
                 'mappings': Mappings.photos,
                 'settings': Settings.photos,
             })
@@ -104,7 +110,7 @@ class Index:
         start = int((now - timedelta(minutes=timeframe)).timestamp())
         end = now.timestamp()
 
-        res = self.es.search(index='photos', size=0, body={
+        res = self.es.search(index=Index.PHOTOS, size=0, body={
             'query': {
                 'range': {
                     'timestamp': {
@@ -131,8 +137,42 @@ class Index:
         Args:
             urls: A list of urls that have been crawled
         """
-        prepared = self._prepare_urls(urls, 'crawled')
+        prepared = self._prepare_urls(urls, Index.CRAWLED)
         bulk(self.es, prepared, request_timeout=80)
+
+    def timestamp_of_most_recent_document(self, index: str) -> int:
+        """Get timestamp of most recent document in given index.
+
+        Args:
+            index: the index the most recent document should be in
+
+        Returns:
+            Timestamp of most recent document in given index
+            int
+
+        Raises:
+            EmptySearchResultException: if index is empty
+        """
+        res = self.es.search(index=index, size=1, body={
+            'query': {
+                'match_all': {}
+            },
+            'sort': [
+                {
+                    'timestamp': {
+                        'order': 'desc'
+                    }
+                }
+            ],
+            '_source': ['timestamp']
+        })
+
+        if res['hits']['total'] == 0:
+            raise EmptySearchResultException('index is empty')
+
+        doc = res['hits']['hits'][0]  # type: dict
+        timestamp = doc['_source']['timestamp']  # type: int
+        return timestamp
 
     def add_uncrawled_urls(self, urls: list):
         """Add uncrawled urls.
@@ -141,7 +181,7 @@ class Index:
             urls: A list of urls that have NOT been crawled yet
         """
         urls = self.remove_already_crawled_urls(urls)
-        prepared = self._prepare_urls(urls, 'uncrawled')
+        prepared = self._prepare_urls(urls, Index.UNCRAWLED)
         bulk(self.es, prepared, request_timeout=80)
 
     def remove_already_crawled_urls(self, urls: list) -> list:
@@ -157,7 +197,7 @@ class Index:
         hashes = []
         for url in urls:
             hashes.append(url.hash())
-        res = self.es.search(index='crawled', body={
+        res = self.es.search(index=Index.CRAWLED, body={
             'query': {
                 'bool': {
                     'filter': {
@@ -191,7 +231,7 @@ class Index:
         """
         prepared = []
         for url in urls:
-            if index == 'crawled':
+            if index == Index.CRAWLED:
                 source = {
                     'url': url.to_string(),
                     'timestamp': int(time.time()),
@@ -221,7 +261,7 @@ class Index:
         Raises:
             EmptySearchResultException: if index is empty
         """
-        res = self.es.search(index='uncrawled', size=1, body={
+        res = self.es.search(index=Index.UNCRAWLED, size=1, body={
             'query': {
                 'function_score': {
                     'query': {
@@ -239,7 +279,7 @@ class Index:
         })
 
         if res['hits']['total'] == 0:
-            raise EmptySearchResultException('if index is empty')
+            raise EmptySearchResultException('uncrawled index is empty')
 
         url = Url.from_string(res['hits']['hits'][0]['_source']['url'])
         return url
@@ -261,7 +301,7 @@ class Index:
         Raises:
             EmptySearchResultException: if no url was found
         """
-        res = self.es.search(index='crawled', size=5, body={
+        res = self.es.search(index=Index.CRAWLED, size=5, body={
             'query': {
                 'bool': {
                     'must': {
@@ -305,7 +345,7 @@ class Index:
             number of crawled urls with status code 200
             int
         """
-        res = self.es.search(index='crawled', size=0, body={
+        res = self.es.search(index=Index.CRAWLED, size=0, body={
             'query': {
                 'bool': {
                     'must': {
@@ -340,7 +380,12 @@ class Index:
         Args:
             id: Id of url to delete
         """
-        self.es.delete(index='uncrawled', doc_type='url', id=id, ignore=404)
+        self.es.delete(
+            index=Index.UNCRAWLED,
+            doc_type='url',
+            id=id,
+            ignore=404
+        )
 
     def set_status_code_for_crawled_url(self, url: Url, status_code: int):
         """Set status code for a crawled url.
@@ -350,7 +395,7 @@ class Index:
             status_code: the status code of the http request to the url
         """
         self.es.update(
-            index='crawled',
+            index=Index.CRAWLED,
             doc_type='url',
             id=url.hash(),
             retry_on_conflict=3,
@@ -371,7 +416,7 @@ class Index:
             refresh_rate: Refresh rate to use (Hourly, Daily, etc.)
         """
         self.es.update(
-            index='crawled',
+            index=Index.CRAWLED,
             doc_type='url',
             id=url.hash(),
             retry_on_conflict=3,
@@ -393,7 +438,7 @@ class Index:
             photo: Photo to store
         """
         self.es.index(
-            index='photos',
+            index=Index.PHOTOS,
             doc_type='photo',
             id=photo.path.uuid,
             body={
@@ -414,7 +459,7 @@ class Index:
         Args:
             refresh_rate: Given refresh rate photo was taken with
         """
-        res = self.es.search(index='photos', size=0, body={
+        res = self.es.search(index=Index.PHOTOS, size=0, body={
             'query': {
                 'bool': {
                     'must': {
@@ -449,7 +494,7 @@ class Index:
             domain: The given domain to check
             refresh_rate: Given refresh rate photo was taken with
         """
-        res = self.es.search(index='photos', size=0, body={
+        res = self.es.search(index=Index.PHOTOS, size=0, body={
             'query': {
                 'bool': {
                     'must': [
@@ -498,7 +543,7 @@ class Index:
         Raises:
             EmptySearchResultException: if no capture_at value was found
         """
-        res = self.es.search(index='photos', size=1, body={
+        res = self.es.search(index=Index.PHOTOS, size=1, body={
             'query': {
                 'bool': {
                     'must': [
@@ -567,7 +612,7 @@ class Index:
             refresh_rate
         )
 
-        res = self.es.search(index='photos', size=1, body={
+        res = self.es.search(index=Index.PHOTOS, size=1, body={
             'query': {
                 'bool': {
                     'must': [
@@ -684,7 +729,7 @@ class Index:
             self,
             refresh_rate
         )
-        res = self.es.search(index='photos', size=0, body={
+        res = self.es.search(index=Index.PHOTOS, size=0, body={
             'query': {
                 'bool': {
                     'must': [
@@ -750,7 +795,7 @@ class Index:
             self,
             refresh_rate
         )
-        res = self.es.search(index='photos', size=10000, body={
+        res = self.es.search(index=Index.PHOTOS, size=10000, body={
             'query': {
                 'bool': {
                     'must': [
@@ -813,7 +858,7 @@ class Index:
             self,
             refresh_rate
         )
-        res = self.es.search(index='photos', size=0, body={
+        res = self.es.search(index=Index.PHOTOS, size=0, body={
             'query': {
                 'bool': {
                     'must': [
