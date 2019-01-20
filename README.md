@@ -21,11 +21,11 @@ FUSE is used to mount a synthetic filesystem to read back the photos taken of th
 
 #### Elasticsearch
 
-From the [Elasticsearch wikipedia page](https://en.wikipedia.org/wiki/Elasticsearch)
+[Elasticsearch](https://www.elastic.co/products/elasticsearch) is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
 
-> Elasticsearch is a search engine based on the Lucene library. It provides a distributed, multitenant-capable full-text search engine with an HTTP web interface and schema-free JSON documents.
+#### ImageMagick
 
-Elasticsearch is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
+[ImageMagick](https://www.imagemagick.org) is used for optimizing image files saved to disk. This is an optional dependency since it is only used when the `--optimize-storage` flag is used.
 
 ### Linux
 
@@ -46,7 +46,13 @@ chmod +x geckodriver
 sudo mv geckodriver /usr/bin/
 ```
 
-__3. Install saas__
+__3. Install ImageMagick (optional)__
+
+```bash
+sudo apt-get install imagemagick
+```
+
+__4. Install saas__
 
 ```bash
 git clone https://github.com/nattvara/saas.git && cd saas
@@ -101,7 +107,13 @@ python3 --version
 # Python 3.7.2
 ```
 
-__6. Install saas__
+__6. Install ImageMagick (optional)__
+
+```bash
+brew install imagemagick
+```
+
+__7. Install saas__
 
 ```bash
 git clone https://github.com/nattvara/saas.git && cd saas
@@ -249,7 +261,7 @@ usage: saas [-h] [--version] [--debug] [--refresh-rate] [--crawler-threads]
             [--elasticsearch-host] [--setup-elasticsearch]
             [--clear-elasticsearch] [--stay-at-domain] [--ignore-found-urls]
             [--viewport-width] [--viewport-height] [--viewport-max-height]
-            [--stop-if-idle]
+            [--optimize-storage] [--stop-if-idle]
             url_file mountpoint
 
 Screenshot as a service
@@ -291,6 +303,8 @@ optional arguments:
   --viewport-max-height
                         Max height of camera viewport in pixels, if
                         --viewport-height is set this will be ignored
+  --optimize-storage    Image files should be optimized to take up less
+                        storage (takes longer time to render)
   --stop-if-idle        If greater than 0 saas will stop if it is idle for
                         more than the provided number of minutes
 ```
@@ -315,31 +329,25 @@ When saas responds to a directory listing it only needs to query the elasticsear
 
 ```console
 $ tree ~/.saas-data-dir/
-├── 0
-│   └── 093754eb-a433-4ebf-9f7e-007ea0fd2768.png
-├── 1
-│   └── 1b6977a7-aaad-445f-a66a-a7ec63cc46b8.png
-├── 2
-│   ├── 24634cda-dfd5-4a55-ac64-09ca1c80908a.png
-│   ├── 253d1777-10bb-411d-b0dd-129f83b7ecd1.png
-│   └── 2e317e63-6855-449a-98a4-877c5a77344e.png
-├── 3
-│   └── 386e0b8e-5743-40c7-99c2-916b7e3588fc.png
-├── 5
-│   └── 529ff735-871c-4180-aa68-74d7921f1500.png
-├── 7
-│   └── 72dd1dee-e12f-4c63-b64f-531fe4fa2a15.png
-├── 8
-│   ├── 81d73c80-fe38-49f6-9fcd-349f5acfc1d6.png
-│   ├── 8573d008-f692-4aa8-8f94-b96b27a5e5dc.png
-│   └── 887ded64-df29-4cb1-b992-9bd019deaa47.png
-├── a
-│   ├── a4d706d9-6154-4a01-96e3-12f3c22029b8.png
-│   └── a8211dc4-ebfe-48e7-8d06-2746df9ec1e6.png
-└── d
-    ├── d5d72760-34e5-433a-99c7-caac89bd6020.png
-    ├── d8ea42f2-d6df-4320-bcef-9425ecfde4f3.png
-    └── d8ed2aab-ab70-4dfe-a600-143878916063.png
+├── 18
+│   └── 18dfe716-cdb2-4916-8154-6088d9bc6ee3.png
+├── 1c
+│   └── 1c1d0ee8-28f6-4b7c-b70f-8e800c58a3a6.png
+├── 29
+│   └── 29dd23f3-1791-46e6-8a83-25f5736a0894.png
+├── 50
+│   └── 50f13985-2cce-4464-942d-d9bbea165785.png
+├── 76
+│   └── 769933ce-2cde-4f30-a215-c26227850c8b.png
+├── 89
+│   ├── 8975f15c-7112-499c-97d5-44dd501b9b09.png
+│   └── 89ec9675-84f8-47fa-9589-8d39a8a34ea1.png
+├── ab
+│   └── ab5bbb0f-03cb-45ed-be1d-e257434a925c.png
+├── ca
+│   └── ca1551a2-8855-4d0d-869b-108b9b7122bf.png
+└── d7
+    └── d79598a2-619f-4192-bb39-5e31642be800.png
 ```
 
 ## Build

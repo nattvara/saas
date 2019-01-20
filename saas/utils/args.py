@@ -163,6 +163,16 @@ def get_argument_parser():
     )
 
     parser.add_argument(
+        '--optimize-storage',
+        action='store_true',
+        default=False,
+        help='''
+            Image files should be optimized to take up
+            less storage (takes longer time to render)
+        ''',
+    )
+
+    parser.add_argument(
         '--stop-if-idle',
         metavar='',
         type=int,

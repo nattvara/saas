@@ -58,6 +58,8 @@ class Photographer:
             timer = time.time()
             url = self._checkout_url()
 
+            console.dp(f'taking photo of {url.to_string()}')
+
             path = PhotoPath(self.datadir)
             photo = LoadingPhoto(
                 url=url,
