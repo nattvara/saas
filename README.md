@@ -5,7 +5,7 @@
 
 ## About this project
 
-This is a coding challenge for [Detectify](http://detectify.com/). The challenge is to build a component/service that can take a list of urls and receive screenshots of those urls.
+This is a coding challenge for [Detectify](http://detectify.com/). The challenge is to build a component/service that can take a list of urls and retrieve screenshots of those urls.
 
 ## Installation
 
