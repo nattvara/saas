@@ -128,6 +128,9 @@ class Camera:
 
                 self.webdriver.quit()
 
+        if path.should_optimize():
+            path.optimize()
+
         return Screenshot(
             url=url,
             path=path,

@@ -155,3 +155,16 @@ class PhotoPath:
             int
         """
         return os.path.getsize(self.full_path())
+
+    def should_optimize(self) -> bool:
+        """If photo file should be optimized.
+
+        Returns:
+            True if should be optimize, otherwise False
+            bool
+        """
+        return self.datadir.optimize_storage
+
+    def optimize(self):
+        """Optimize png file in data directory."""
+        self.datadir.optimize_file(self.full_path())

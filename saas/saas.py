@@ -21,7 +21,7 @@ def main():
         JavascriptSnippets.load()
 
         index = Index(host=args.elasticsearch_host)
-        datadir = DataDirectory(args.data_dir)
+        datadir = DataDirectory(args.data_dir, args.optimize_storage)
 
         refresh_rate = {
             'day': refresh.Daily,
@@ -67,7 +67,7 @@ def main():
         Controller.start_photographers(
             amount=args.photographer_threads,
             refresh_rate=refresh_rate,
-            datadir=DataDirectory(args.data_dir),
+            datadir=datadir,
             viewport_width=args.viewport_width,
             viewport_height=args.viewport_height,
             viewport_max_height=args.viewport_max_height,
