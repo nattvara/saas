@@ -41,4 +41,4 @@ setInterval(function() {
     if (loaded === imgs.length) {
         window.__selenium_was_equal++;
     }
-}, 500);
+}, 200);

@@ -7,11 +7,11 @@ from selenium.common.exceptions import JavascriptException
 from saas.photographer.photo import PhotoPath, Screenshot
 from saas.storage.refresh import RefreshRate
 from http.client import RemoteDisconnected
+from typing import Type, Optional
 from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
 from os.path import dirname
-from typing import Type
 import time
 import os
 
@@ -19,7 +19,12 @@ import os
 class Camera:
     """Camera class."""
 
-    def __init__(self, viewport_width: int=1920, viewport_height: int=0):
+    def __init__(
+        self,
+        viewport_width: int=1920,
+        viewport_height: int=0,
+        viewport_max_height: Optional[int]=None
+    ):
         """Create new camera.
 
         Args:
@@ -27,12 +32,15 @@ class Camera:
             viewport_height: height of camera viewport, if set to 0 camera
                 will try to take a full height high quality screenshot,
                 which is way slower than fixed size (default: {0})
+            viewport_max_height: max height of camera viewport if
+                viewport_height is not default value this will be ignored
         """
         self.webdriver = None  # type: webdriver.FirefoxProfile
         self.width = 0
         self.height = 0
         self.viewport_width = viewport_width
         self.viewport_height = viewport_height
+        self.viewport_max_height = viewport_max_height
 
     def take_picture(
         self, url: Url,
@@ -82,18 +90,26 @@ class Camera:
                 self._wait_for_images_to_load()
 
                 # scroll down the page to trigger load of images
-                steps = 2 * int(self._document_height() / self.height)
+                steps = int(self._document_height() / 1080)
                 for i in range(1, steps):
-                    self._scroll_y_axis(int((self.height / 2) * i))
+                    scroll_to = i * 1080
+                    print(scroll_to)
+                    if self.viewport_max_height is not None:
+                        if scroll_to >= self.viewport_max_height:
+                            break
+                    self._scroll_y_axis(scroll_to)
                     self._wait_for_images_to_load()
 
                 # resize the viewport and make sure that it's scrolled
                 # all the way to the top
-                self._scroll_y_axis(0)
-                self._set_resolution(
-                    self.viewport_width,
-                    self._document_height()
-                )
+                self._scroll_y_axis(self._document_height() * -1)
+                if self.viewport_max_height is None:
+                    height = self._document_height()
+                elif self._document_height() > self.viewport_max_height:
+                    height = self.viewport_max_height
+                else:
+                    height = self._document_height()
+                self._set_resolution(self.viewport_width, height)
                 self._wait_for_images_to_load()
                 self._scroll_y_axis(-500)
                 self._wait_for_resize()
@@ -400,7 +416,7 @@ class Limits:
     Various limits used in rendering page.
     """
 
-    ALL_IMAGES_LOADED = 5
+    ALL_IMAGES_LOADED = 15
 
     SLEEP_BETWEEN_IMAGE_LOAD_CHECK = 1
 
