@@ -15,6 +15,7 @@ import saas.mount.file as file
 from typing import Type
 import urllib.request
 import random
+import json
 import time
 
 
@@ -69,6 +70,24 @@ class Index:
         except (HTTPError, URLError):
             pass
         return False
+
+    def verify(self):
+        """Verify elasticsearch is configured properly.
+
+        Returns:
+            True if configured correctly, otherwise False
+            bool
+        """
+        url = f'http://{self.host}/_mapping'
+        with urllib.request.urlopen(url) as response:
+            mappings = json.loads(response.read())
+            if Index.UNCRAWLED not in mappings:
+                return False
+            if Index.CRAWLED not in mappings:
+                return False
+            if Index.PHOTOS not in mappings:
+                return False
+        return True
 
     def clear(self):
         """Clear all documents."""

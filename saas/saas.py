@@ -23,6 +23,20 @@ def main():
         JavascriptSnippets.load()
 
         index = Index(host=args.elasticsearch_host)
+
+        if not index.ping():
+            console.p('ERROR: failed to connect to elasticsearch')
+            sys.exit()
+
+        if not index.verify():
+            if not args.setup_elasticsearch and not args.clear_elasticsearch:
+                console.p('ERROR: elasticsearch is not configured')
+                console.p('       {} {}'.format(
+                    'start saas with --setup-elasticsearch',
+                    'to configure elasticsearch'
+                ))
+                sys.exit()
+
         datadir = DataDirectory(args.data_dir, args.optimize_storage)
 
         refresh_rate = {
@@ -30,10 +44,6 @@ def main():
             'hour': refresh.Hourly,
             'minute': refresh.EveryMinute,
         }[args.refresh_rate]
-
-        if not index.ping():
-            console.p('ERROR: failed to connect to elasticsearch')
-            sys.exit()
 
         if args.setup_elasticsearch:
             index.create_indices()
