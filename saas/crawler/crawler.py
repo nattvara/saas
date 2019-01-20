@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from saas.storage.index import Index, EmptySearchResultException
+import saas.utils.console as console
 from saas.web.browser import Browser
 from saas.web.url import Url
 import time
@@ -104,9 +105,13 @@ class Crawler:
         if url is not None:
             self.index.add_crawled_url(url)
 
+            console.dcr(f'crawling {url.to_string()}')
+
             page = Browser.get_page(url)
             if 'text/html' not in page.content_type:
                 page.status_code = 0
+
+            console.dcr(f'{url.to_string()} responded with {page.status_code}')
 
             self.index.set_status_code_for_crawled_url(
                 url,
@@ -121,6 +126,8 @@ class Crawler:
 
             if self.stay_at_domain:
                 page.remove_urls_not_from_domain(url.domain)
+
+            console.dcr(f'found {len(page.urls)} links at {url.to_string()}')
 
             self.index.add_uncrawled_urls(page.urls)
 

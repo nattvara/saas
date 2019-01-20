@@ -5,6 +5,7 @@ from saas.mount.file import Path, Directory, File, LastCapture
 from saas.storage.index import Index, PhotoNotFoundException
 from saas.storage.refresh import RefreshRate
 from saas.utils.files import real_path
+import saas.utils.console as console
 from typing import Type, Generator
 from fuse import FUSE, Operations
 import errno
@@ -63,6 +64,7 @@ class Filesystem(Operations):
         Raises:
             FileNotFoundError: If a file was not found at path
         """
+        console.df(f'getattr {path}')
         try:
             return self._attributes(path)
         except PhotoNotFoundException:
@@ -84,6 +86,7 @@ class Filesystem(Operations):
             File in directory
             str
         """
+        console.df(f'readdir {path}')
         for file in self._list(path):
             yield file.filename
 
@@ -98,6 +101,7 @@ class Filesystem(Operations):
             Returns a file descriptor id
             int
         """
+        console.df(f'open {path}')
         return os.open(self._translate_path(path), flags)
 
     def release(self, path: str, fh: int):
@@ -110,6 +114,7 @@ class Filesystem(Operations):
             path: path to a file
             fh: file descriptor
         """
+        console.df(f'release {path}')
         os.close(fh)
 
     def read(self, path: str, length: int, offset: int, fh: int) -> bytes:
@@ -125,6 +130,7 @@ class Filesystem(Operations):
             Contents of file
             bytes
         """
+        console.df(f'read {path}')
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
 
@@ -142,6 +148,7 @@ class Filesystem(Operations):
         Raises:
             IOError: will always raise this exception
         """
+        console.df(f'write {path}')
         raise IOError(
             errno.EPERM,
             os.strerror(errno.EPERM),

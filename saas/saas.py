@@ -18,6 +18,8 @@ def main():
         parser = arguments.get_argument_parser()
         args = parser.parse_args(sys.argv[1:])
 
+        console.DEBUG = args.debug
+
         JavascriptSnippets.load()
 
         index = Index(host=args.elasticsearch_host)

@@ -7,6 +7,7 @@ from selenium.common.exceptions import JavascriptException
 from saas.photographer.photo import PhotoPath, Screenshot
 from saas.storage.refresh import RefreshRate
 from http.client import RemoteDisconnected
+import saas.utils.console as console
 from typing import Type, Optional
 from selenium import webdriver
 import saas.threads as threads
@@ -64,6 +65,11 @@ class Camera:
         """
         os.environ['MOZ_HEADLESS'] = '1'
         try:
+            console.dca('launching firefox, camera: {}x{}'.format(
+                self.viewport_width,
+                self.viewport_height if self.viewport_height != 0 else 'full'
+            ))
+
             profile = self._create_webdriver_profile()
             self.webdriver = self._create_webdriver(
                 profile,
@@ -75,21 +81,26 @@ class Camera:
                 self.webdriver.service.process.pid
             )
 
+            console.dca(f'routing camera to {url.to_string()}')
+
             self._route_to_blank()
             self._route(url)
 
             if self.viewport_height != 0:
                 # fixed height
+                console.dca('taking fixed screenshot')
                 self._set_resolution(self.viewport_width, self.viewport_height)
                 self._start_images_monitor()
                 self._wait_for_images_to_load()
             else:
                 # fullpage screenshot
+                console.dca('taking fullpage screenshot')
                 self._set_resolution(self.viewport_width, 1080)
                 self._start_images_monitor()
                 self._wait_for_images_to_load()
 
                 # scroll down the page to trigger load of images
+                console.dca('making sure all images have loaded')
                 steps = int(self._document_height() / 800)
                 for i in range(1, steps):
                     scroll_to = i * 800
@@ -101,6 +112,7 @@ class Camera:
 
                 # resize the viewport and make sure that it's scrolled
                 # all the way to the top
+                console.dca(f'resizing camera viewport for {url.to_string()}')
                 self._scroll_y_axis(self._document_height() * -1)
                 if self.viewport_max_height is None:
                     height = self._document_height()
@@ -113,6 +125,7 @@ class Camera:
                 self._scroll_y_axis(-500)
                 self._wait_for_resize()
 
+            console.dca(f'saving screenshot of {url.to_string()}')
             self._save(path)
         except RemoteDisconnected:
             pass
@@ -129,7 +142,11 @@ class Camera:
                 self.webdriver.quit()
 
         if path.should_optimize():
+            console.dca(f'optimizing screenshot of {url.to_string()}')
+            timer = time.time()
             path.optimize()
+            seconds = int(time.time() - timer)
+            console.dca(f'optimizing of {url.to_string()} took {seconds}s')
 
         return Screenshot(
             url=url,
