@@ -93,7 +93,6 @@ class Camera:
                 steps = int(self._document_height() / 1080)
                 for i in range(1, steps):
                     scroll_to = i * 1080
-                    print(scroll_to)
                     if self.viewport_max_height is not None:
                         if scroll_to >= self.viewport_max_height:
                             break
