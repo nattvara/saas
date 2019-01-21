@@ -55,13 +55,11 @@ sudo apt-get install imagemagick
 __4. Install saas__
 
 ```bash
-git clone https://github.com/nattvara/saas.git && cd saas
-
 # Make sure you have Python 3.7 installed!
 python --version
 # Python 3.7.2
 
-python setup.py install && exec "$SHELL"
+pip install saas
 
 saas --version
 # saas 1.0
@@ -116,13 +114,11 @@ brew install imagemagick
 __7. Install saas__
 
 ```bash
-git clone https://github.com/nattvara/saas.git && cd saas
-
 # Make sure you have Python 3.7 installed!
 python3 --version
 # Python 3.7.2
 
-python3 setup.py install
+python3 -m pip install saas
 
 saas --version
 # saas 1.0
@@ -352,6 +348,18 @@ $ tree ~/.saas-data-dir/
 
 ## Build
 
+Install saas by cloning it from source
+
+```console
+$ git clone https://github.com/nattvara/saas.git && cd saas
+
+$ python3 -m venv ./venv
+
+$ source ./venv/bin/activate
+
+$ python setup.py develop
+```
+
 ### Firefox extensions
 
 The camera module uses selenium to render pages. To improve performance saas uses [uBlock Origin](https://github.com/gorhill/uBlock) to block ads. To have greater access to more webpages saas uses [I don't care about cookies](https://www.i-dont-care-about-cookies.eu/) to bypass popups and GDPR consent forms. Many websites also employ the practice of paywalls for some of their content, however, many websites leave their site open to users coming from search engines and social media sites. Saas therefore has a small custom [firefox extension](extensions/referer_header) to rewrite all http requests made from firefox to include the header `Referer: https://google.com` - this will allow access to a lot more content on the web.
@@ -375,12 +383,6 @@ zip -r -j -FS extensions/referer_header.xpi extensions/referer_header/*
 ### Run the testsuite
 
 ```console
-$ python3 -m venv ./venv
-
-$ source ./venv/bin/activate
-
-$ python setup.py develop
-
 $ python -m unittest discover -s tests
 ```
 

@@ -122,21 +122,13 @@ sudo mv geckodriver /usr/bin/
 
 ### Installing saas
 
-Install saas by cloning it from source
-
-```bash
-git clone https://github.com/nattvara/saas.git && cd saas
-```
-
-Create virtual environment and install dependencies
+Create virtual environment and install saas
 
 ```bash
 python -m venv ./venv
 source ./venv/bin/activate
-python setup.py install
 
-# reload shell
-exec "$SHELL"
+python -m pip install saas
 
 saas --version
 # saas 1.0
