@@ -13,6 +13,7 @@ from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
 from os.path import dirname
+import pkg_resources
 import time
 import os
 
@@ -420,13 +421,22 @@ class Camera:
 class Addons:
     """Firefox addons."""
 
-    REFERER_HEADER = f'{dirname(__file__)}/../../extensions/referer_header.xpi'
+    REFERER_HEADER = pkg_resources.resource_filename(
+        'extensions',
+        'referer_header.xpi'
+    )
 
     # https://github.com/gorhill/uBlock/releases
-    UBLOCK_ORIGIN = f'{dirname(__file__)}/../../extensions/uBlock0_1.17.7rc0.xpi'
+    UBLOCK_ORIGIN = pkg_resources.resource_filename(
+        'extensions',
+        'uBlock0_1.17.7rc0.xpi'
+    )
 
     # https://www.i-dont-care-about-cookies.eu/
-    IDCAC = f'{dirname(__file__)}/../../extensions/idcac_2.9.5.xpi'
+    IDCAC = pkg_resources.resource_filename(
+        'extensions',
+        'idcac_2.9.5.xpi'
+    )
 
 
 class Limits:
