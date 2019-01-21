@@ -7,6 +7,9 @@ import sys
 import beeprint
 
 
+DEBUG = False
+
+
 def pp(var):
     """Pretty print.
 
@@ -42,6 +45,46 @@ def p(var, end=None):
     else:
         print(var)
     sys.stdout.flush()
+
+
+def dcr(message: str):
+    """Print crawler debug info.
+
+    Args:
+        message: debug message
+    """
+    if DEBUG:
+        p('debug [crawler]: ' + message)
+
+
+def dp(message: str):
+    """Print photographer debug info.
+
+    Args:
+        message: debug message
+    """
+    if DEBUG:
+        p('debug [photographer]: ' + message)
+
+
+def dca(message: str):
+    """Print camera debug info.
+
+    Args:
+        message: debug message
+    """
+    if DEBUG:
+        p('debug [camera]: ' + message)
+
+
+def df(message: str):
+    """Print filesystem debug info.
+
+    Args:
+        message: debug message
+    """
+    if DEBUG:
+        p('debug [filesystem]: ' + message)
 
 
 def eol():

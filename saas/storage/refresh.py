@@ -8,6 +8,7 @@ import datetime
 class RefreshRate(metaclass=ABCMeta):
     """Refresh class."""
 
+    @staticmethod
     @abstractmethod
     def lock_format():
         """Get the human readable format of lock."""
@@ -34,6 +35,7 @@ class Daily(RefreshRate):
     Refresh photographs every day.
     """
 
+    @staticmethod
     def lock_format():
         """Get the human readable format of lock."""
         return 'daily'
@@ -49,6 +51,7 @@ class Hourly(RefreshRate):
     Refresh photographs every hour.
     """
 
+    @staticmethod
     def lock_format():
         """Get the human readable format of lock."""
         return 'hourly'
@@ -64,6 +67,7 @@ class EveryMinute(RefreshRate):
     Refresh photographs every minute.
     """
 
+    @staticmethod
     def lock_format():
         """Get the human readable format of lock."""
         return 'minute'
