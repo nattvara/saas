@@ -4,3 +4,5 @@ venv/
 geckodriver.log
 urls
 .mypy_cache/
+dist/
+build/
