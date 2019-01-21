@@ -5,6 +5,7 @@ import saas.storage.datadir as DataDirectory
 import saas.storage.refresh as refresh
 from saas.web.url import Url
 from abc import ABCMeta
+from typing import Type
 import uuid
 import os
 
@@ -16,7 +17,7 @@ class Photo(metaclass=ABCMeta):
         self,
         url: Url,
         path: 'PhotoPath',
-        refresh_rate: refresh.RefreshRate,
+        refresh_rate: Type[refresh.RefreshRate],
         index_filesize: int=None
     ):
         """Create new photo.
@@ -109,7 +110,11 @@ class Screenshot(Photo):
 class PhotoPath:
     """Photopath class."""
 
-    def __init__(self, datadir: DataDirectory.DataDirectory, uuid: str=''):
+    def __init__(
+        self,
+        datadir: DataDirectory.DataDirectory,
+        uuid: str=''
+    ):
         """Create new path to a photo.
 
         Args:
@@ -150,3 +155,16 @@ class PhotoPath:
             int
         """
         return os.path.getsize(self.full_path())
+
+    def should_optimize(self) -> bool:
+        """If photo file should be optimized.
+
+        Returns:
+            True if should be optimize, otherwise False
+            bool
+        """
+        return self.datadir.optimize_storage
+
+    def optimize(self):
+        """Optimize png file in data directory."""
+        self.datadir.optimize_file(self.full_path())

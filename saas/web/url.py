@@ -34,6 +34,7 @@ class Url:
         self.fragment = fragment
         self.sha256 = ''
 
+    @staticmethod
     def from_string(url: str) -> 'Url':
         """Create url from string.
 
@@ -99,11 +100,18 @@ class Url:
             str
         """
         if self.fragment:
-            return self._safe_filename(self.fragment) + '.png'
+            with_fragment_filename = ''  # type: str
+            with_fragment_filename = self._safe_filename(
+                self.fragment
+            ) + '.png'
+            return with_fragment_filename
 
         if self.query:
-            return self._safe_filename(self.query) + '.png'
+            with_query_filename = ''  # type: str
+            with_query_filename = self._safe_filename(self.query) + '.png'
+            return with_query_filename
 
+        filename = ''  # type: str
         filename = self._safe_filename(self.path.split('/')[-1:][0])
         if filename == '':
             filename = 'index'

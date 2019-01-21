@@ -8,6 +8,7 @@ import saas.storage.refresh as refresh
 import saas.photographer.camera as c
 import saas.utils.console as console
 from saas.storage.index import Index
+from typing import Type, Optional
 import saas.threads as threads
 from saas.web.url import Url
 import random
@@ -20,10 +21,11 @@ class Photographer:
     def __init__(
         self,
         index: Index,
-        refresh_rate: refresh.RefreshRate,
+        refresh_rate: Type[refresh.RefreshRate],
         datadir: DataDirectory,
         viewport_width: int=1920,
         viewport_height: int=0,
+        viewport_max_height: Optional[int]=None
     ):
         """Create new photographer.
 
@@ -36,12 +38,14 @@ class Photographer:
             datadir: Data directory to store pictures in
             viewport_width: width of camera viewport
             viewport_height: height of camera viewport
+            viewport_max_height: max height of camera viewport
         """
         self.index = index
         self.refresh_rate = refresh_rate
         self.datadir = datadir
         self.viewport_width = viewport_width
         self.viewport_height = viewport_height
+        self.viewport_max_height = viewport_max_height
 
     def tick(self):
         """Tick.
@@ -53,6 +57,8 @@ class Photographer:
         try:
             timer = time.time()
             url = self._checkout_url()
+
+            console.dp(f'taking photo of {url.to_string()}')
 
             path = PhotoPath(self.datadir)
             photo = LoadingPhoto(
@@ -66,6 +72,7 @@ class Photographer:
             camera = c.Camera(
                 viewport_width=self.viewport_width,
                 viewport_height=self.viewport_height,
+                viewport_max_height=self.viewport_max_height,
             )
             photo = camera.take_picture(url, path, self.refresh_rate)
             self.index.save_photo(photo)
@@ -98,6 +105,6 @@ class Photographer:
             # to take photographs of are small
             time.sleep(round(random.uniform(10, 0), 2))
 
-        url = self.index.recently_crawled_url(self.refresh_rate)
+        url = self.index.recently_crawled_url(self.refresh_rate)  # type: Url
         self.index.lock_crawled_url(url, self.refresh_rate)
         return url

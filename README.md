@@ -5,7 +5,7 @@
 
 ## About this project
 
-This is a coding challenge for [Detectify](http://detectify.com/). The challenge is to build a component/service that can take a list of urls and receive screenshots of those urls.
+This is a coding challenge for [Detectify](http://detectify.com/). The challenge is to build a component/service that can take a list of urls and retrieve screenshots of those urls.
 
 ## Installation
 
@@ -21,11 +21,11 @@ FUSE is used to mount a synthetic filesystem to read back the photos taken of th
 
 #### Elasticsearch
 
-From the [Elasticsearch wikipedia page](https://en.wikipedia.org/wiki/Elasticsearch)
+[Elasticsearch](https://www.elastic.co/products/elasticsearch) is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
 
-> Elasticsearch is a search engine based on the Lucene library. It provides a distributed, multitenant-capable full-text search engine with an HTTP web interface and schema-free JSON documents.
+#### ImageMagick
 
-Elasticsearch is used as a storage backend for saas. Read more about the storage in the [storage section](#storage).
+[ImageMagick](https://www.imagemagick.org) is used for optimizing image files saved to disk. This is an optional dependency since it is only used when the `--optimize-storage` flag is used.
 
 ### Linux
 
@@ -46,19 +46,23 @@ chmod +x geckodriver
 sudo mv geckodriver /usr/bin/
 ```
 
-__3. Install saas__
+__3. Install ImageMagick (optional)__
 
 ```bash
-git clone https://github.com/nattvara/saas.git && cd saas
+sudo apt-get install imagemagick
+```
 
+__4. Install saas__
+
+```bash
 # Make sure you have Python 3.7 installed!
 python --version
 # Python 3.7.2
 
-python setup.py install && exec "$SHELL"
+pip install saas
 
 saas --version
-# saas 1.0
+# saas 1.1.0.1
 ```
 
 ### macOS
@@ -101,19 +105,23 @@ python3 --version
 # Python 3.7.2
 ```
 
-__6. Install saas__
+__6. Install ImageMagick (optional)__
 
 ```bash
-git clone https://github.com/nattvara/saas.git && cd saas
+brew install imagemagick
+```
 
+__7. Install saas__
+
+```bash
 # Make sure you have Python 3.7 installed!
 python3 --version
 # Python 3.7.2
 
-python3 setup.py install
+python3 -m pip install saas
 
 saas --version
-# saas 1.0
+# saas 1.1.0.1
 ```
 
 ## Usage
@@ -244,11 +252,12 @@ By default the camera tries to take a full screen screenshot. This means that it
 ### Full list of options
 
 ```
-usage: saas [-h] [--version] [--refresh-rate] [--crawler-threads]
+usage: saas [-h] [--version] [--debug] [--refresh-rate] [--crawler-threads]
             [--photographer-threads] [--data-dir] [--clear-data-dir]
             [--elasticsearch-host] [--setup-elasticsearch]
             [--clear-elasticsearch] [--stay-at-domain] [--ignore-found-urls]
-            [--viewport-width] [--viewport-height]
+            [--viewport-width] [--viewport-height] [--viewport-max-height]
+            [--optimize-storage] [--stop-if-idle]
             url_file mountpoint
 
 Screenshot as a service
@@ -260,6 +269,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
+  --debug               Display debugging information
   --refresh-rate        Refresh captures of urls every 'day', 'hour' or
                         'minute' (default: hour)
   --crawler-threads     Number of crawler threads, usually not neccessary with
@@ -281,10 +291,18 @@ optional arguments:
   --stay-at-domain      Use flag to ignore urls from a different domain than
                         the one it was found at
   --ignore-found-urls   Use flag to ignore urls found on crawled urls
-  --viewport-width      Width of camera viewport (default: 1920)
-  --viewport-height     Height of camera viewport, if set to 0 camera will try
-                        to take a full height high quality screenshot, which
-                        is way slower than fixed size (default: 0)
+  --viewport-width      Width of camera viewport in pixels (default: 1920)
+  --viewport-height     Height of camera viewport in pixels, if set to 0
+                        camera will try to take a full height high quality
+                        screenshot, which is way slower than fixed size
+                        (default: 0)
+  --viewport-max-height
+                        Max height of camera viewport in pixels, if
+                        --viewport-height is set this will be ignored
+  --optimize-storage    Image files should be optimized to take up less
+                        storage (takes longer time to render)
+  --stop-if-idle        If greater than 0 saas will stop if it is idle for
+                        more than the provided number of minutes
 ```
 
 <p id="storage"></p>
@@ -307,37 +325,71 @@ When saas responds to a directory listing it only needs to query the elasticsear
 
 ```console
 $ tree ~/.saas-data-dir/
-├── 0
-│   └── 093754eb-a433-4ebf-9f7e-007ea0fd2768.png
-├── 1
-│   └── 1b6977a7-aaad-445f-a66a-a7ec63cc46b8.png
-├── 2
-│   ├── 24634cda-dfd5-4a55-ac64-09ca1c80908a.png
-│   ├── 253d1777-10bb-411d-b0dd-129f83b7ecd1.png
-│   └── 2e317e63-6855-449a-98a4-877c5a77344e.png
-├── 3
-│   └── 386e0b8e-5743-40c7-99c2-916b7e3588fc.png
-├── 5
-│   └── 529ff735-871c-4180-aa68-74d7921f1500.png
-├── 7
-│   └── 72dd1dee-e12f-4c63-b64f-531fe4fa2a15.png
-├── 8
-│   ├── 81d73c80-fe38-49f6-9fcd-349f5acfc1d6.png
-│   ├── 8573d008-f692-4aa8-8f94-b96b27a5e5dc.png
-│   └── 887ded64-df29-4cb1-b992-9bd019deaa47.png
-├── a
-│   ├── a4d706d9-6154-4a01-96e3-12f3c22029b8.png
-│   └── a8211dc4-ebfe-48e7-8d06-2746df9ec1e6.png
-└── d
-    ├── d5d72760-34e5-433a-99c7-caac89bd6020.png
-    ├── d8ea42f2-d6df-4320-bcef-9425ecfde4f3.png
-    └── d8ed2aab-ab70-4dfe-a600-143878916063.png
+├── 18
+│   └── 18dfe716-cdb2-4916-8154-6088d9bc6ee3.png
+├── 1c
+│   └── 1c1d0ee8-28f6-4b7c-b70f-8e800c58a3a6.png
+├── 29
+│   └── 29dd23f3-1791-46e6-8a83-25f5736a0894.png
+├── 50
+│   └── 50f13985-2cce-4464-942d-d9bbea165785.png
+├── 76
+│   └── 769933ce-2cde-4f30-a215-c26227850c8b.png
+├── 89
+│   ├── 8975f15c-7112-499c-97d5-44dd501b9b09.png
+│   └── 89ec9675-84f8-47fa-9589-8d39a8a34ea1.png
+├── ab
+│   └── ab5bbb0f-03cb-45ed-be1d-e257434a925c.png
+├── ca
+│   └── ca1551a2-8855-4d0d-869b-108b9b7122bf.png
+└── d7
+    └── d79598a2-619f-4192-bb39-5e31642be800.png
 ```
 
-## Run the testsuite
+## Build
+
+Install saas by cloning it from source
+
+```console
+$ git clone https://github.com/nattvara/saas.git && cd saas
+
+$ python3 -m venv ./venv
+
+$ source ./venv/bin/activate
+
+$ python setup.py develop
+```
+
+### Firefox extensions
+
+The camera module uses selenium to render pages. To improve performance saas uses [uBlock Origin](https://github.com/gorhill/uBlock) to block ads. To have greater access to more webpages saas uses [I don't care about cookies](https://www.i-dont-care-about-cookies.eu/) to bypass popups and GDPR consent forms. Many websites also employ the practice of paywalls for some of their content, however, many websites leave their site open to users coming from search engines and social media sites. Saas therefore has a small custom [firefox extension](extensions/referer_header) to rewrite all http requests made from firefox to include the header `Referer: https://google.com` - this will allow access to a lot more content on the web.
+
+#### Updating uBlock Origin
+
+Download the latest ublock.xpi from [gorhill/uBlock releases](https://github.com/gorhill/uBlock/releases) and replace the version in the `extensions/` directory.
+
+#### Updating IDCAC
+
+Download and install the latest version using firefox from [https://www.i-dont-care-about-cookies.eu/](https://www.i-dont-care-about-cookies.eu/). Locate the `.xpi` file inside Firefox's extensions directory, on macOS this is `~/Library/Application Support/Firefox/Profiles/[profile]/extensions/`. Copy the `.xpi` file to the `extensions/` directory.
+
+#### Referer Header
+
+Make zip archive of source files
 
 ```bash
+zip -r -j -FS extensions/referer_header.xpi extensions/referer_header/*
+```
+
+### Run the testsuite
+
+```console
 $ python -m unittest discover -s tests
+```
+
+### Run the typechecker
+
+```console
+$ mypy saas
 ```
 
 <p id="api"></p>
@@ -379,6 +431,11 @@ Starting a simple python webserver could allow for traversing the saas filesyste
 ```bash
 # inside mounted filesystem
 python -m SimpleHTTPServer 3001
+
+# so the following url
+# https://www.ft.com/content/180f3428-1923-11e9-b93e-f4351a53f1c3
+# if photographed, could be found at
+wget http://localhost:3001/www.ft.com/latest/content/180f3428-1923-11e9-b93e-f4351a53f1c3.png
 ```
 
 Those are two out of a hundred ways to integrate/extend saas.
@@ -386,6 +443,8 @@ Those are two out of a hundred ways to integrate/extend saas.
 ## Performance and Scalability
 
 Saas is designed to run over multiple machines. There can be virtually unlimited number of saas-nodes added to a single cluster, the only two things they need is a common elasticsearch instance or cluster to talk to, and a common data directory. Elasticsearch is well known for its scalability and the data directory could for instance be a network drive they share, Amazon EFS or any other way to share a drive between machines.
+
+Since all nodes in a cluster share the same index and data directory they can all read the images the cluster as a whole produces. Nodes can also join and leave the cluster freely without incurring any long time data loss.
 
 The biggest hit to performance are taking photos of image-heavy sites or using a large viewport size. Fixed viewport size is a good option for optimizing performance, there is virtually no upper limit to how large a website can be vertically. Screenshots of tabloid websites or sites with infinite-scroll can easily reach 25-50 MB in size.
 
@@ -397,7 +456,9 @@ See [examples/](examples/README.md) for some good examples for testing saas.
 
 ## Known issues
 
-Under some circumstances, a fatal crash for instance, the mounted filesystem might not unmount automatically. If this happens, run
+Under some circumstances, a fatal crash for instance, the mounted filesystem might not unmount automatically. Also the filesystem will not be able to unmount if some other process is currently reading from the filesystem.
+
+If you encouter this, run
 
 ```bash
 umount path/to/mounted_directory
