@@ -12,7 +12,6 @@ from typing import Type, Optional
 from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
-from os.path import dirname
 import pkg_resources
 import time
 import os
@@ -136,10 +135,6 @@ class Camera:
             pass
         finally:
             if self.webdriver:
-
-                # fixes bug where webdriver would never quit
-                self._stop_webdriver_service_process()
-
                 self.webdriver.quit()
 
         if path.should_optimize():
@@ -196,42 +191,6 @@ class Camera:
         self.webdriver.install_addon(Addons.REFERER_HEADER, temporary=True)
         self.webdriver.install_addon(Addons.IDCAC)
         self.webdriver.install_addon(Addons.UBLOCK_ORIGIN, temporary=True)
-
-    def _stop_webdriver_service_process(self):
-        """Stop seleniums "service" process.
-
-        The "stop" method in the module selenium.webdriver.common.service
-        has a call to process.wait(), which for some reason seems to wait
-        indefinitely and prevent camera from ever exiting take_photo().
-
-        Terminating the process here instead, will prevent the service
-        from calling process.wait() and hanging the entire camera.
-        """
-        try:
-            self.webdriver.service.send_remote_shutdown_command()
-        except TypeError:
-            pass
-
-        try:
-            for stream in [
-                self.webdriver.service.process.stdin,
-                self.webdriver.service.process.stdout,
-                self.webdriver.service.process.stderr
-            ]:
-                try:
-                    stream.close()
-                except AttributeError:
-                    pass
-            self.webdriver.service.process.terminate()
-
-            # this is the call that causes the webdriver to never
-            # finish quitting
-            # self.webdriver.service.process.wait()
-
-            self.webdriver.service.process.kill()
-            self.webdriver.service.process = None
-        except OSError:
-            pass
 
     def _route(self, url: Url):
         """Route camera to url.
