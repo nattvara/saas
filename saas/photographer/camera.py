@@ -12,7 +12,6 @@ from typing import Type, Optional
 from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
-import pkg_resources
 import time
 import os
 
@@ -195,21 +194,15 @@ class Camera:
         Args:
             addons: optional dictionary with paths to addons (default: {{}})
         """
-        if 'REFERER_HEADER' not in addons:
-            self.webdriver.install_addon(Addons.REFERER_HEADER, temporary=True)
-        else:
+        if 'REFERER_HEADER' in addons:
             self.webdriver.install_addon(
                 addons['REFERER_HEADER'], temporary=True
             )
 
-        if 'IDCAC' not in addons:
-            self.webdriver.install_addon(Addons.IDCAC)
-        else:
+        if 'IDCAC' in addons:
             self.webdriver.install_addon(addons['IDCAC'])
 
-        if 'UBLOCK_ORIGIN' not in addons:
-            self.webdriver.install_addon(Addons.UBLOCK_ORIGIN, temporary=True)
-        else:
+        if 'UBLOCK_ORIGIN' in addons:
             self.webdriver.install_addon(
                 addons['UBLOCK_ORIGIN'], temporary=True
             )
@@ -397,27 +390,6 @@ class Camera:
         while score > 0:
             time.sleep(Limits.RESIZE_WAIT_TIME)
             score -= 1
-
-
-class Addons:
-    """Firefox addons."""
-
-    REFERER_HEADER = pkg_resources.resource_filename(
-        'extensions',
-        'referer_header.xpi'
-    )
-
-    # https://github.com/gorhill/uBlock/releases
-    UBLOCK_ORIGIN = pkg_resources.resource_filename(
-        'extensions',
-        'uBlock0_1.18.14.xpi'
-    )
-
-    # https://www.i-dont-care-about-cookies.eu/
-    IDCAC = pkg_resources.resource_filename(
-        'extensions',
-        'idcac_2.9.8.xpi'
-    )
 
 
 class Limits:
