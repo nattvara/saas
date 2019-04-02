@@ -24,7 +24,8 @@ class Camera:
         self,
         viewport_width: int=1920,
         viewport_height: int=0,
-        viewport_max_height: Optional[int]=None
+        viewport_max_height: Optional[int]=None,
+        addons: dict={}
     ):
         """Create new camera.
 
@@ -35,6 +36,8 @@ class Camera:
                 which is way slower than fixed size (default: {0})
             viewport_max_height: max height of camera viewport if
                 viewport_height is not default value this will be ignored
+            addons: optional dictionary with paths to firefox
+                addons (default: {{}})
         """
         self.webdriver = None  # type: webdriver.FirefoxProfile
         self.width = 0
@@ -42,6 +45,7 @@ class Camera:
         self.viewport_width = viewport_width
         self.viewport_height = viewport_height
         self.viewport_max_height = viewport_max_height
+        self.addons = addons
 
     def take_picture(
         self, url: Url,
@@ -75,7 +79,7 @@ class Camera:
                 profile,
                 UserAgents.GOOGLEBOT
             )
-            self._install_webdriver_addons()
+            self._install_webdriver_addons(self.addons)
 
             threads.Controller.webdrivers.append(
                 self.webdriver.service.process.pid
@@ -181,16 +185,34 @@ class Camera:
         profile.set_preference('dom.push.enabled', False)
         return webdriver.Firefox()
 
-    def _install_webdriver_addons(self):
+    def _install_webdriver_addons(self, addons: dict={}):
         """Install webdriver addons.
 
         The extensions that are installed either improve rendering
         performance. Or let firefox bypass paywalls or cookie/GDPR
         concent forms.
+
+        Args:
+            addons: optional dictionary with paths to addons (default: {{}})
         """
-        self.webdriver.install_addon(Addons.REFERER_HEADER, temporary=True)
-        self.webdriver.install_addon(Addons.IDCAC)
-        self.webdriver.install_addon(Addons.UBLOCK_ORIGIN, temporary=True)
+        if 'REFERER_HEADER' not in addons:
+            self.webdriver.install_addon(Addons.REFERER_HEADER, temporary=True)
+        else:
+            self.webdriver.install_addon(
+                addons['REFERER_HEADER'], temporary=True
+            )
+
+        if 'IDCAC' not in addons:
+            self.webdriver.install_addon(Addons.IDCAC)
+        else:
+            self.webdriver.install_addon(addons['IDCAC'])
+
+        if 'UBLOCK_ORIGIN' not in addons:
+            self.webdriver.install_addon(Addons.UBLOCK_ORIGIN, temporary=True)
+        else:
+            self.webdriver.install_addon(
+                addons['UBLOCK_ORIGIN'], temporary=True
+            )
 
     def _route(self, url: Url):
         """Route camera to url.
