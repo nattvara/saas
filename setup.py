@@ -10,7 +10,7 @@ with open(readme, encoding='utf-8') as file:
 
 setup(
     name='saas',
-    version='1.1.3',
+    version='1.1.3.1',
     description='Screenshot as a service',
     long_description=long_description,
     long_description_content_type='text/markdown',
