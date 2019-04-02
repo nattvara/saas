@@ -410,13 +410,13 @@ class Addons:
     # https://github.com/gorhill/uBlock/releases
     UBLOCK_ORIGIN = pkg_resources.resource_filename(
         'extensions',
-        'uBlock0_1.17.7rc0.xpi'
+        'uBlock0_1.18.14.xpi'
     )
 
     # https://www.i-dont-care-about-cookies.eu/
     IDCAC = pkg_resources.resource_filename(
         'extensions',
-        'idcac_2.9.5.xpi'
+        'idcac_2.9.8.xpi'
     )
 
 
