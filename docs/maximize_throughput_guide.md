@@ -131,7 +131,7 @@ source ./venv/bin/activate
 python -m pip install saas
 
 saas --version
-# saas 1.1.2
+# saas 1.1.3
 ```
 
 ## Step 3, Configure networking

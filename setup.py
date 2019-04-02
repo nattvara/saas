@@ -10,7 +10,7 @@ with open(readme, encoding='utf-8') as file:
 
 setup(
     name='saas',
-    version='1.1.2',
+    version='1.1.3',
     description='Screenshot as a service',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -31,9 +31,9 @@ setup(
     ],
     package_data={
         'extensions': [
-            'idcac_2.9.5.xpi',
+            'idcac_2.9.8.xpi',
             'referer_header.xpi',
-            'uBlock0_1.17.7rc0.xpi',
+            'uBlock0_1.18.14.xpi',
         ]
     },
     entry_points={
