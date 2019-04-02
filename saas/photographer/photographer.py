@@ -4,6 +4,7 @@ from __future__ import annotations
 from saas.photographer.photo import PhotoPath, LoadingPhoto
 from saas.storage.index import EmptySearchResultException
 from saas.storage.datadir import DataDirectory
+from saas.photographer.addons import Addons
 import saas.storage.refresh as refresh
 import saas.photographer.camera as c
 import saas.utils.console as console
@@ -73,6 +74,11 @@ class Photographer:
                 viewport_width=self.viewport_width,
                 viewport_height=self.viewport_height,
                 viewport_max_height=self.viewport_max_height,
+                addons={
+                    'IDCAC': Addons.IDCAC,
+                    'REFERER_HEADER': Addons.REFERER_HEADER,
+                    'UBLOCK_ORIGIN': Addons.UBLOCK_ORIGIN,
+                }
             )
             photo = camera.take_picture(url, path, self.refresh_rate)
             self.index.save_photo(photo)
