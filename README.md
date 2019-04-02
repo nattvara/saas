@@ -3,10 +3,6 @@
 [![saas demo](https://asciinema.org/a/KwtTFXEi4EhdsDUTglcw7aH8q.svg)](https://asciinema.org/a/KwtTFXEi4EhdsDUTglcw7aH8q?autoplay=1)
 
 
-## About this project
-
-This is a coding challenge for [Detectify](http://detectify.com/). The challenge is to build a component/service that can take a list of urls and retrieve screenshots of those urls.
-
 ## Installation
 
 ### Requirements
