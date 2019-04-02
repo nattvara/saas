@@ -58,7 +58,7 @@ python --version
 pip install saas
 
 saas --version
-# saas 1.1.0.2
+# saas 1.1.1
 ```
 
 ### macOS
