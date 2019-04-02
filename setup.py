@@ -31,9 +31,9 @@ setup(
     ],
     package_data={
         'extensions': [
-            'idcac_2.9.5.xpi',
+            'idcac_2.9.8.xpi',
             'referer_header.xpi',
-            'uBlock0_1.17.7rc0.xpi',
+            'uBlock0_1.18.14.xpi',
         ]
     },
     entry_points={
