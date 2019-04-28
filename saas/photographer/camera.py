@@ -466,3 +466,7 @@ class UserAgents:
     # masquerading as google bot can trick some website to not serve
     # tons of ads and load faster
     GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+
+    DEFAULT = 'deafult'
+
+    MAC_FIREFOX = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:66.0) Gecko/20100101 Firefox/66.0'
