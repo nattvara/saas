@@ -1,10 +1,12 @@
 """Camera module."""
 
 from __future__ import annotations
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from urllib3.exceptions import ProtocolError, MaxRetryError
 from saas.photographer.javascript import JavascriptSnippets
 from selenium.common.exceptions import JavascriptException
 from saas.photographer.photo import PhotoPath, Screenshot
+from selenium.webdriver.firefox.options import Options
 from saas.storage.refresh import RefreshRate
 from http.client import RemoteDisconnected
 import saas.utils.console as console
@@ -13,7 +15,6 @@ from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
 import time
-import os
 
 
 class Camera:
@@ -24,7 +25,11 @@ class Camera:
         viewport_width: int=1920,
         viewport_height: int=0,
         viewport_max_height: Optional[int]=None,
-        addons: dict={}
+        addons: dict={},
+        dpi: float=1.0,
+        user_agent: str=None,
+        profile: str=None,
+        headless: bool=True
     ):
         """Create new camera.
 
@@ -37,6 +42,14 @@ class Camera:
                 viewport_height is not default value this will be ignored
             addons: optional dictionary with paths to firefox
                 addons (default: {{}})
+            dpi: Modifies firefox's layout.css.devPixelsPerPx setting
+                (default: 1.0)
+            user_agent: User agent string to use for requests
+            profile: Optional path to existing firefox profile eg.
+                ~/Library/Application Support/Firefox/profiles/xxxx.default
+            headless: If camera should start firefox in headless mode or not,
+                note captures larger than display is not possible if not in
+                headless mode
         """
         self.webdriver = None  # type: webdriver.FirefoxProfile
         self.width = 0
@@ -45,11 +58,19 @@ class Camera:
         self.viewport_height = viewport_height
         self.viewport_max_height = viewport_max_height
         self.addons = addons
+        self.dpi = dpi
+        self.profile = profile
+        if user_agent is None:
+            user_agent = UserAgents.DEFAULT
+        self.user_agent = user_agent
+        self.headless = headless
 
     def take_picture(
-        self, url: Url,
+        self,
+        url: Url,
         path: PhotoPath,
-        refresh_rate: Type[RefreshRate]
+        refresh_rate: Type[RefreshRate],
+        retry: int=5
     ) -> Screenshot:
         """Take picture of url.
 
@@ -66,18 +87,15 @@ class Camera:
             A picture of the given url
             Screenshot
         """
-        os.environ['MOZ_HEADLESS'] = '1'
         try:
-            console.dca('launching firefox, camera: {}x{}'.format(
+            console.dca('launching firefox, camera: {}x{} [{}]'.format(
                 self.viewport_width,
-                self.viewport_height if self.viewport_height != 0 else 'full'
+                self.viewport_height if self.viewport_height != 0 else 'full',
+                self.dpi
             ))
 
             profile = self._create_webdriver_profile()
-            self.webdriver = self._create_webdriver(
-                profile,
-                UserAgents.GOOGLEBOT
-            )
+            self.webdriver = self._create_webdriver(profile)
             self._install_webdriver_addons(self.addons)
 
             threads.Controller.webdrivers.append(
@@ -85,9 +103,6 @@ class Camera:
             )
 
             console.dca(f'routing camera to {url.to_string()}')
-
-            self._route_to_blank()
-            self._route(url)
 
             if self.viewport_height != 0:
                 # fixed height
@@ -161,12 +176,13 @@ class Camera:
             creating webdriver.
             webdriver.FirefoxProfile
         """
+        if self.profile:
+            return webdriver.FirefoxProfile(self.profile)
         return webdriver.FirefoxProfile()
 
     def _create_webdriver(
         self,
-        profile: webdriver.FirefoxProfile,
-        user_agent: str
+        profile: webdriver.FirefoxProfile
     ) -> webdriver.Firefox:
         """Create webdriver.
 
@@ -178,11 +194,25 @@ class Camera:
             A webdriver that can be used to interact with the firefox browser
             webdriver.Firefox
         """
-        profile.set_preference('general.useragent.override', user_agent)
+        if self.user_agent != UserAgents.DEFAULT:
+            profile.set_preference(
+                'general.useragent.override',
+                self.user_agent
+            )
         profile.set_preference('dom.popup_maximum', 0)
+        profile.set_preference('layout.css.devPixelsPerPx', str(self.dpi))
         profile.set_preference('privacy.popups.showBrowserMessage', False)
         profile.set_preference('dom.push.enabled', False)
-        return webdriver.Firefox()
+
+        options = Options()
+        options.headless = self.headless
+
+        driver = webdriver.Firefox(
+            firefox_profile=profile,
+            options=options,
+            firefox_binary=FirefoxBinary()
+        )
+        return driver
 
     def _install_webdriver_addons(self, addons: dict={}):
         """Install webdriver addons.
