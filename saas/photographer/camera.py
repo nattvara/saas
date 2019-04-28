@@ -272,6 +272,13 @@ class Camera:
             path: PhotoPath object used to retrieve path in data directory
             to save png file in
         """
+        height = self.webdriver.get_window_size()['height']
+        width = self.webdriver.get_window_size()['width']
+        console.dca(f'saving png with viewport resolution [{width}x{height}]')
+        console.dca('png output resolution [{}x{}]'.format(
+            int(width * self.dpi),
+            int(height * self.dpi)
+        ))
         self.webdriver.save_screenshot(path.full_path())
 
     def _set_resolution(self, width: int, height: int):
