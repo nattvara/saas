@@ -1,10 +1,13 @@
 """Camera module."""
 
 from __future__ import annotations
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from urllib3.exceptions import ProtocolError, MaxRetryError
 from saas.photographer.javascript import JavascriptSnippets
 from selenium.common.exceptions import JavascriptException
 from saas.photographer.photo import PhotoPath, Screenshot
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.firefox.options import Options
 from saas.storage.refresh import RefreshRate
 from http.client import RemoteDisconnected
 import saas.utils.console as console
@@ -13,7 +16,6 @@ from selenium import webdriver
 import saas.threads as threads
 from saas.web.url import Url
 import time
-import os
 
 
 class Camera:
@@ -24,7 +26,11 @@ class Camera:
         viewport_width: int=1920,
         viewport_height: int=0,
         viewport_max_height: Optional[int]=None,
-        addons: dict={}
+        addons: dict={},
+        dpi: float=1.0,
+        user_agent: str=None,
+        profile: str=None,
+        headless: bool=True
     ):
         """Create new camera.
 
@@ -37,6 +43,14 @@ class Camera:
                 viewport_height is not default value this will be ignored
             addons: optional dictionary with paths to firefox
                 addons (default: {{}})
+            dpi: Modifies firefox's layout.css.devPixelsPerPx setting
+                (default: 1.0)
+            user_agent: User agent string to use for requests
+            profile: Optional path to existing firefox profile eg.
+                ~/Library/Application Support/Firefox/profiles/xxxx.default
+            headless: If camera should start firefox in headless mode or not,
+                note captures larger than display is not possible if not in
+                headless mode
         """
         self.webdriver = None  # type: webdriver.FirefoxProfile
         self.width = 0
@@ -45,11 +59,19 @@ class Camera:
         self.viewport_height = viewport_height
         self.viewport_max_height = viewport_max_height
         self.addons = addons
+        self.dpi = dpi
+        self.profile = profile
+        if user_agent is None:
+            user_agent = UserAgents.DEFAULT
+        self.user_agent = user_agent
+        self.headless = headless
 
     def take_picture(
-        self, url: Url,
+        self,
+        url: Url,
         path: PhotoPath,
-        refresh_rate: Type[RefreshRate]
+        refresh_rate: Type[RefreshRate],
+        retry: int=5
     ) -> Screenshot:
         """Take picture of url.
 
@@ -61,23 +83,22 @@ class Camera:
             url: Url to take picture of
             path: Path to store url at
             refresh_rate: Refresh rate for photo
+            retry: Number of times to retry if a timeout exception is
+                thrown (default: 5)
 
         Returns:
             A picture of the given url
             Screenshot
         """
-        os.environ['MOZ_HEADLESS'] = '1'
         try:
-            console.dca('launching firefox, camera: {}x{}'.format(
+            console.dca('launching firefox, camera: {}x{} [{}]'.format(
                 self.viewport_width,
-                self.viewport_height if self.viewport_height != 0 else 'full'
+                self.viewport_height if self.viewport_height != 0 else 'full',
+                self.dpi
             ))
 
             profile = self._create_webdriver_profile()
-            self.webdriver = self._create_webdriver(
-                profile,
-                UserAgents.GOOGLEBOT
-            )
+            self.webdriver = self._create_webdriver(profile)
             self._install_webdriver_addons(self.addons)
 
             threads.Controller.webdrivers.append(
@@ -86,8 +107,18 @@ class Camera:
 
             console.dca(f'routing camera to {url.to_string()}')
 
-            self._route_to_blank()
-            self._route(url)
+            try:
+                self._route_to_blank()
+                self._route(url)
+                self._route(url)
+                self._route(url)
+            except TimeoutException as e:
+                retry = retry - 1
+                if retry < 0:
+                    raise e
+                console.dca('routing reached timeout, retrying')
+                self.webdriver.quit()
+                return self.take_picture(url, path, refresh_rate, retry)
 
             if self.viewport_height != 0:
                 # fixed height
@@ -107,11 +138,9 @@ class Camera:
                 steps = int(self._document_height() / 800)
                 for i in range(1, steps):
                     scroll_to = i * 800
-                    if self.viewport_max_height is not None:
-                        if scroll_to >= self.viewport_max_height:
-                            break
                     self._scroll_y_axis(scroll_to)
                     self._wait_for_images_to_load()
+                    time.sleep(0.5)
 
                 # resize the viewport and make sure that it's scrolled
                 # all the way to the top
@@ -123,9 +152,10 @@ class Camera:
                     height = self.viewport_max_height
                 else:
                     height = self._document_height()
+                self._wait_for_images_to_load()
                 self._set_resolution(self.viewport_width, height)
                 self._wait_for_images_to_load()
-                self._scroll_y_axis(-500)
+                self._scroll_y_axis(-height)
                 self._wait_for_resize()
 
             console.dca(f'saving screenshot of {url.to_string()}')
@@ -161,12 +191,13 @@ class Camera:
             creating webdriver.
             webdriver.FirefoxProfile
         """
+        if self.profile:
+            return webdriver.FirefoxProfile(self.profile)
         return webdriver.FirefoxProfile()
 
     def _create_webdriver(
         self,
-        profile: webdriver.FirefoxProfile,
-        user_agent: str
+        profile: webdriver.FirefoxProfile
     ) -> webdriver.Firefox:
         """Create webdriver.
 
@@ -178,11 +209,25 @@ class Camera:
             A webdriver that can be used to interact with the firefox browser
             webdriver.Firefox
         """
-        profile.set_preference('general.useragent.override', user_agent)
+        if self.user_agent != UserAgents.DEFAULT:
+            profile.set_preference(
+                'general.useragent.override',
+                self.user_agent
+            )
         profile.set_preference('dom.popup_maximum', 0)
+        profile.set_preference('layout.css.devPixelsPerPx', str(self.dpi))
         profile.set_preference('privacy.popups.showBrowserMessage', False)
         profile.set_preference('dom.push.enabled', False)
-        return webdriver.Firefox()
+
+        options = Options()
+        options.headless = self.headless
+
+        driver = webdriver.Firefox(
+            firefox_profile=profile,
+            options=options,
+            firefox_binary=FirefoxBinary()
+        )
+        return driver
 
     def _install_webdriver_addons(self, addons: dict={}):
         """Install webdriver addons.
@@ -213,6 +258,7 @@ class Camera:
         Args:
             url: A Url to route camera to
         """
+        self.webdriver.set_page_load_timeout(10)
         self.webdriver.get(url.to_string())
 
     def _route_to_blank(self):
@@ -226,6 +272,13 @@ class Camera:
             path: PhotoPath object used to retrieve path in data directory
             to save png file in
         """
+        height = self.webdriver.get_window_size()['height']
+        width = self.webdriver.get_window_size()['width']
+        console.dca(f'saving png with viewport resolution [{width}x{height}]')
+        console.dca('png output resolution [{}x{}]'.format(
+            int(width * self.dpi),
+            int(height * self.dpi)
+        ))
         self.webdriver.save_screenshot(path.full_path())
 
     def _set_resolution(self, width: int, height: int):
@@ -413,3 +466,7 @@ class UserAgents:
     # masquerading as google bot can trick some website to not serve
     # tons of ads and load faster
     GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+
+    DEFAULT = 'deafult'
+
+    MAC_FIREFOX = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:66.0) Gecko/20100101 Firefox/66.0'
