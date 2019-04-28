@@ -138,11 +138,9 @@ class Camera:
                 steps = int(self._document_height() / 800)
                 for i in range(1, steps):
                     scroll_to = i * 800
-                    if self.viewport_max_height is not None:
-                        if scroll_to >= self.viewport_max_height:
-                            break
                     self._scroll_y_axis(scroll_to)
                     self._wait_for_images_to_load()
+                    time.sleep(0.5)
 
                 # resize the viewport and make sure that it's scrolled
                 # all the way to the top
@@ -154,9 +152,10 @@ class Camera:
                     height = self.viewport_max_height
                 else:
                     height = self._document_height()
+                self._wait_for_images_to_load()
                 self._set_resolution(self.viewport_width, height)
                 self._wait_for_images_to_load()
-                self._scroll_y_axis(-500)
+                self._scroll_y_axis(-height)
                 self._wait_for_resize()
 
             console.dca(f'saving screenshot of {url.to_string()}')
