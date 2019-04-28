@@ -6,6 +6,7 @@ from urllib3.exceptions import ProtocolError, MaxRetryError
 from saas.photographer.javascript import JavascriptSnippets
 from selenium.common.exceptions import JavascriptException
 from saas.photographer.photo import PhotoPath, Screenshot
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.options import Options
 from saas.storage.refresh import RefreshRate
 from http.client import RemoteDisconnected
@@ -82,6 +83,8 @@ class Camera:
             url: Url to take picture of
             path: Path to store url at
             refresh_rate: Refresh rate for photo
+            retry: Number of times to retry if a timeout exception is
+                thrown (default: 5)
 
         Returns:
             A picture of the given url
@@ -103,6 +106,19 @@ class Camera:
             )
 
             console.dca(f'routing camera to {url.to_string()}')
+
+            try:
+                self._route_to_blank()
+                self._route(url)
+                self._route(url)
+                self._route(url)
+            except TimeoutException as e:
+                retry = retry - 1
+                if retry < 0:
+                    raise e
+                console.dca('routing reached timeout, retrying')
+                self.webdriver.quit()
+                return self.take_picture(url, path, refresh_rate, retry)
 
             if self.viewport_height != 0:
                 # fixed height
@@ -243,6 +259,7 @@ class Camera:
         Args:
             url: A Url to route camera to
         """
+        self.webdriver.set_page_load_timeout(10)
         self.webdriver.get(url.to_string())
 
     def _route_to_blank(self):
