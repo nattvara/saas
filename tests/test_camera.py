@@ -1,7 +1,8 @@
 """Camera test."""
 
-from saas.photographer.camera import Camera, UserAgents, Limits
+from saas.photographer.camera import Camera, Limits
 from saas.photographer.javascript import JavascriptSnippets
+import selenium.webdriver.firefox.firefox_binary
 from saas.storage.datadir import DataDirectory
 from saas.photographer.photo import PhotoPath
 from unittest.mock import MagicMock, call
@@ -28,6 +29,7 @@ class TestCamera(unittest.TestCase):
 
     def creates_webdriver(self):
         """Test creates a webdriver."""
+        selenium.webdriver.firefox.firefox_binary.FirefoxBinary = MagicMock()
         self.webdriver_profile = self.camera._create_webdriver_profile()
         self.camera.webdriver = self.camera._create_webdriver(
             self.webdriver_profile
