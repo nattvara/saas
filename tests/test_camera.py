@@ -30,12 +30,12 @@ class TestCamera(unittest.TestCase):
         """Test creates a webdriver."""
         self.webdriver_profile = self.camera._create_webdriver_profile()
         self.camera.webdriver = self.camera._create_webdriver(
-            self.webdriver_profile,
-            UserAgents.GOOGLEBOT
+            self.webdriver_profile
         )
 
     def routes_to_url(self):
         """Test routes camera to a url."""
+        self.camera.webdriver.set_page_load_timeout = MagicMock()
         self.camera.webdriver.get = MagicMock()
 
     def uses_javascript_snippets(self):
@@ -57,14 +57,9 @@ class TestCamera(unittest.TestCase):
 
         self.camera.webdriver = self.camera._create_webdriver(
             self.webdriver_profile,
-            UserAgents.GOOGLEBOT
         )
 
         self.assertIsInstance(obj=self.camera.webdriver, cls=webdriver.Firefox)
-        self.webdriver_profile.set_preference.assert_any_call(
-            'general.useragent.override',
-            UserAgents.GOOGLEBOT
-        )
         self.webdriver_profile.set_preference.assert_any_call(
             'dom.popup_maximum',
             0
@@ -225,6 +220,8 @@ class TestCamera(unittest.TestCase):
     def test_camera_can_save_screenshot(self):
         """Test camera can save screenshot."""
         self.creates_webdriver()
+        self.camera.webdriver.get_window_size = MagicMock()
+        self.camera.webdriver.save = MagicMock()
         self.camera.webdriver.save_screenshot = MagicMock()
 
         path = PhotoPath(self.datadir)
