@@ -10,7 +10,7 @@ with open(readme, encoding='utf-8') as file:
 
 setup(
     name='saas',
-    version='1.2',
+    version='1.2.1',
     description='Screenshot as a service',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -25,9 +25,9 @@ setup(
         'wheel==0.32.*',
         'beeprint==2.4.*',
         'elasticsearch==6.3.*',
-        'selenium==3.141.*',
         'fusepy==3.0.*',
         'psutil==4.3.*',
+        'selenium',
     ],
     package_data={
         'extensions': [
