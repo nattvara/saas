@@ -25,9 +25,9 @@ setup(
         'wheel==0.32.*',
         'beeprint==2.4.*',
         'elasticsearch==6.3.*',
-        'selenium==3.141.*',
         'fusepy==3.0.*',
         'psutil==4.3.*',
+        'selenium',
     ],
     package_data={
         'extensions': [
